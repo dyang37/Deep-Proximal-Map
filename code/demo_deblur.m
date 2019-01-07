@@ -18,10 +18,10 @@ clc
 addpath(genpath('./utilities/'));
 
 %add path to denoisers
-addpath(genpath('/Users/dyangsteven/Plug_n_play/denoisers/BM3D/'));
-addpath(genpath('/Users/dyangsteven/Plug_n_play/denoisers/TV/'));
-addpath(genpath('/Users/dyangsteven/Plug_n_play/denoisers/NLM/'));
-addpath(genpath('/Users/dyangsteven/Plug_n_play/denoisers/RF/'));
+addpath(genpath('/Users/dyangsteven/Plug_n_play/mypnp/code/BM3D/'));
+addpath(genpath('/Users/dyangsteven/Plug_n_play/mypnp/code/TV/'));
+addpath(genpath('/Users/dyangsteven/Plug_n_play/mypnp/code/NLM/'));
+addpath(genpath('/Users/dyangsteven/Plug_n_play/mypnp/code/RF/'));
 
 %read test image
 z_im = imread('./data/House256.png');
@@ -41,7 +41,7 @@ y = imfilter(z,h,'circular')+noise_level*randn(size(z));
 y = proj(y,[0,1]);
 %%%%%%%%%
 %parameters
-method = 'TV';
+method = 'cnn';
 switch method
     case 'RF'
         lambda = 0.0005;
@@ -50,6 +50,8 @@ switch method
     case 'BM3D'
         lambda = 0.001;
     case 'TV'
+        lambda = 0.01;
+    case 'cnn'
         lambda = 0.01;
 end
 
