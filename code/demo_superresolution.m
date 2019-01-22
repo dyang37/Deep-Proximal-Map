@@ -35,9 +35,9 @@ rng(0)
 y = imfilter(z,h,'circular');
 y = downsample2(y,K);
 y = y + noise_level*randn(size(y));
-
+%%
 %parameters
-method = 'BM3D';
+method = 'cnn';
 switch method
     case 'RF'
         lambda = 0.0002;
@@ -46,6 +46,8 @@ switch method
     case 'BM3D'
         lambda = 0.001;
     case 'TV'
+        lambda = 0.01;
+    case 'cnn'
         lambda = 0.01;
 end
 

@@ -66,16 +66,16 @@ for i = 1:h
 end
 
 %% Plotting the images
-% 
-% figure(1)
-% 
-% subplot(1, 2, 1)
-% imagesc(image);axis image;colormap(gray);
-% title('Original image');
-% 
-% subplot(1, 2, 2)
-% imagesc(x);axis image;colormap(gray);
-% title('Shepard-interpolated image');
+ 
+ figure(1)
+ 
+ subplot(1, 2, 1)
+ imagesc(image);axis image;colormap(gray);
+ title('Original image');
+ 
+ subplot(1, 2, 2)
+ imagesc(x);axis image;colormap(gray);
+ title('Shepard-interpolated image');
 
 end
 

@@ -79,6 +79,8 @@ switch method
         denoise=@wrapper_NLM;
     case 'RF'
         denoise=@wrapper_RF;
+    case 'cnn'
+        denoise=@wrapper_cnn;
     otherwise
         error('unknown denoiser \n');
 end
