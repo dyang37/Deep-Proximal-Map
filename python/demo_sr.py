@@ -79,7 +79,6 @@ mu = np.zeros((rows_lr,cols_lr))
 itr = 0
 while (residual > tol) and (itr < max_itr):
   err = (1/sqrt(N))*(sqrt(sum(sum((x-z)**2))))
-  x_old = copy.copy(x)
   v_old = v
   u_old = u
   # inversion with ICD
@@ -87,7 +86,7 @@ while (residual > tol) and (itr < max_itr):
   print(np.shape(xtilde))
   for i in range(rows_lr):
     for j in range(cols_lr):
-      mu[i,j] = np.mean(x_old[i*R:(i+1)*R, j*R:(j+1)*R])
+      mu[i,j] = np.mean(x[i*R:(i+1)*R, j*R:(j+1)*R])
   if itr == 0:
     icd_niter = 10
   else:
