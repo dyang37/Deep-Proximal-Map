@@ -31,14 +31,4 @@ def shepard_init(image, measurement_mask, window):
           weight = IPD[c] / sum_IPD
           interpolated_value = float(interpolated_value + weight*pixel[c])
         x[i,j] = interpolated_value
-  '''
-  plt.figure()
-  plt.subplot(121)
-  plt.imshow(image,interpolation='nearest',cmap='gray')
-  plt.title('original image')
-  plt.subplot(122)
-  plt.imshow(x,interpolation='nearest',cmap='gray')
-  plt.title('sheppard interpolated image')
-  plt.show()
-  '''
   return x

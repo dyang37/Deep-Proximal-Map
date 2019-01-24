@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 # =============================================================================
 #  @article{zhang2017beyond,
 #    title={Beyond a {Gaussian} denoiser: Residual learning of deep {CNN} for image denoising},
@@ -18,10 +17,8 @@
 
 # run this to test the model
 
-import os, time, datetime
-#import PIL.Image as Image
+import os
 import numpy as np
-from keras.models import load_model, model_from_json
 from skimage.measure import compare_psnr, compare_ssim
 from skimage.io import imread, imsave
 
@@ -35,40 +32,9 @@ def to_tensor(img):
 def from_tensor(img):
     return np.squeeze(np.moveaxis(img[...,0],0,-1))
 
-def log(*args,**kwargs):
-     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S:"),*args,**kwargs)
-
-def save_result(result,path):
-    path = path if path.find('.') != -1 else path+'.png'
-    ext = os.path.splitext(path)[-1]
-    if ext in ('.txt','.dlm'):
-        np.savetxt(path,result,fmt='%2.4f')
-    else:
-        imsave(path,np.clip(result,0,1))
 
 
-def show(x,title=None,cbar=False,figsize=None):
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=figsize)
-    plt.imshow(x,interpolation='nearest',cmap='gray')
-    if title:
-        plt.title(title)
-    if cbar:
-        plt.colorbar()
-    plt.show()
-
-
-def cnn_denoiser(noisy_img):
-    model_dir=os.path.join('models','/Users/dyangsteven/Plug_n_play/mypnp/python/denoisers/DnCNN')
-    # load json and create model
-    json_file = open(os.path.join(model_dir,'model.json'), 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    model = model_from_json(loaded_model_json)
-    # load weights into new model
-    model.load_weights(os.path.join(model_dir,'model.h5'))
-    #log('load trained model on Train400 dataset by kai')
-    
+def cnn_denoiser(noisy_img, model):
     y = noisy_img.astype(np.float32)
     y_  = to_tensor(y)
     x_ = model.predict(y_) # inference
