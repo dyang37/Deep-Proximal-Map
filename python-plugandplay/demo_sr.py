@@ -4,12 +4,8 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 sys.path.append(os.path.join(os.getcwd(), "./util"))
 sys.path.append(os.path.join(os.getcwd(), "./denoisers/DnCNN"))
-import dncnn
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt 
 from dncnn import cnn_denoiser
-from skimage.io import imread
+from skimage.io import imread, imsave
 import numpy as np
 from math import sqrt
 from skimage.restoration import denoise_tv_chambolle as denoiser_tv
@@ -53,13 +49,13 @@ K = 2 # downsampling factor
 noise_level = 10./255.;
 rho = 1.
 gamma = 0.99
-max_itr = 30
+max_itr = 200
 tol = 10**-4
 lambd = 0.01
 patience = 5
 
 # data pre-processing: apply mask and add AWGN
-z_in = np.array(imread('./data/couple512.png'), dtype=np.float32) / 255.0
+z_in = np.array(imread('./data/shoes-hr-gray.png'), dtype=np.float32) / 255.0
 # check if grayscale
 [rows_hr,cols_hr] = np.shape(z_in)[0:2]
 if (np.shape(z_in).__len__() > 2):
@@ -83,12 +79,9 @@ y = y[::K,::K] # downsample z by taking every Kth pixel
 np.random.seed(0)
 gauss = np.random.normal(0,1,np.shape(y))
 y = np.clip(y+noise_level*gauss,0,1)
-plt.figure()
-plt.imshow(y,cmap='gray')
-plt.title('downsampled noisy image')
 figname = 'SR_noisy_input'+imgext
 fig_fullpath = os.path.join(os.getcwd(),figname)
-plt.savefig(fig_fullpath)
+imsave(fig_fullpath, y)
 # ADMM initialization
 v = imresize(y,[rows_hr,cols_hr])/255.
 x = v
@@ -146,13 +139,6 @@ while ((residual > tol) or (fluctuate <= patience)) and (itr < max_itr) :
 psnr = compare_psnr(z, x)
 print('PSNR of restored image: ',psnr)
 
-plt.figure()
-plt.subplot(121)
-plt.imshow(z,cmap='gray')
-plt.title('original image')
-plt.subplot(122)
-plt.imshow(x,cmap='gray')
-plt.title('reconstructed image')
-figname = 'SR_'+repr(lambd)+imgext
+figname = 'SR_output_'+str(max_itr)+imgext
 fig_fullpath = os.path.join(os.getcwd(),figname)
-plt.savefig(fig_fullpath)
+imsave(fig_fullpath, np.clip(x,0,1))
