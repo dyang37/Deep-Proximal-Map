@@ -22,6 +22,7 @@ from scipy.ndimage import correlate
 from scipy.misc import imresize
 from numpy.fft import fft2, ifft2
 from skimage.restoration import denoise_nl_means
+
 denoiser=int(sys.argv[1])
 if denoiser == 0:
   # loading pre-trained cnn model...
@@ -52,7 +53,7 @@ K = 2 # downsampling factor
 noise_level = 10./255.;
 rho = 1.
 gamma = 0.99
-max_itr = 300
+max_itr = 30
 tol = 10**-4
 lambd = 0.01
 
@@ -75,12 +76,6 @@ print('input image size: ',np.shape(z))
 N=rows_hr*cols_hr
 rows_lr = rows_hr//K
 cols_lr = cols_hr//K
-'''
-y = np.zeros((rows_lr, cols_lr))
-for i in range(rows_lr):
-  for j in range(cols_lr):
-    y[i,j] = np.mean(z[K*i:K*(i+1),K*j:K*(j+1)])
-'''
 h = gauss2D((9,9),1)
 y = correlate(z,h,mode='wrap')
 y = y[::K,::K] # downsample z by taking every Kth pixel
@@ -90,7 +85,7 @@ y = np.clip(y+noise_level*gauss,0,1)
 plt.figure()
 plt.imshow(y,cmap='gray')
 plt.title('downsampled noisy image')
-figname = repr(K)+'_'+str(max_itr)+'_SR_noisy_input'+imgext
+figname = 'SR_noisy_input'+imgext
 fig_fullpath = os.path.join(os.getcwd(),figname)
 plt.savefig(fig_fullpath)
 # ADMM initialization
@@ -100,7 +95,10 @@ u = np.zeros(np.shape(v))
 residual = float("inf")
 GGt = constructGGt(h,K,rows_hr, cols_hr)
 Gty = construct_Gt(y,h,K)
+
+
 # ADMM recursive update
+print('itr      residual          mean-sqr-error')
 itr = 0
 while (residual > tol) and (itr < max_itr):
   mse = (1/sqrt(N))*(sqrt(sum(sum((x-z)**2))))
@@ -147,6 +145,6 @@ plt.title('original image')
 plt.subplot(122)
 plt.imshow(x,cmap='gray')
 plt.title('reconstructed image')
-figname = repr(K)+'_SR_'+repr(lambd)+imgext
+figname = 'SR_'+repr(lambd)+imgext
 fig_fullpath = os.path.join(os.getcwd(),figname)
 plt.savefig(fig_fullpath)
