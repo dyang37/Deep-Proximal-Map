@@ -31,6 +31,15 @@ Replace `demo_inpaint.py` with `demo_sr.py` for super-resolution demo.
 
 2: Non-local Mean ([Paper](https://ieeexplore.ieee.org/document/1467423))
 
+## Parameter Tuning
 
+### Default Paramters:
 
+Maximum iteration: 30 (This is suboptimal for super-resolution. Increase this to 200 for best performance.)
+
+gamma: 0.99
+
+rho: 1 
+
+nl_mean denoiser: patch_distance = 11, patch_size = 7
 
