@@ -45,7 +45,7 @@ else:
   raise Exception('Error: unknown denoiser.')
 
 # hyperparameters
-K = 2 # downsampling factor
+K = 4 # downsampling factor
 noise_level = 10./255.;
 rho = 1.
 gamma = 0.99
@@ -79,7 +79,7 @@ y = y[::K,::K] # downsample z by taking every Kth pixel
 np.random.seed(0)
 gauss = np.random.normal(0,1,np.shape(y))
 y = np.clip(y+noise_level*gauss,0,1)
-figname = 'SR_noisy_input'+imgext
+figname = str(K)+'_SR_noisy_input.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
 # ADMM initialization
@@ -139,6 +139,6 @@ while ((residual > tol) or (fluctuate <= patience)) and (itr < max_itr) :
 psnr = compare_psnr(z, x)
 print('PSNR of restored image: ',psnr)
 
-figname = 'SR_output_'+str(max_itr)+imgext
+figname = str(K)+'_SR_output_'+imgext
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, np.clip(x,0,1))
