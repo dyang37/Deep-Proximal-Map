@@ -56,6 +56,7 @@ gamma = 0.99
 max_itr = 30
 tol = 10**-4
 lambd = 0.01
+patience = 5
 
 # data pre-processing: apply mask and add AWGN
 z_in = np.array(imread('./data/couple512.png'), dtype=np.float32) / 255.0
@@ -93,6 +94,8 @@ v = imresize(y,[rows_hr,cols_hr])/255.
 x = v
 u = np.zeros(np.shape(v))
 residual = float("inf")
+mse_min = float("inf")
+fluctuate = 0
 GGt = constructGGt(h,K,rows_hr, cols_hr)
 Gty = construct_Gt(y,h,K)
 
@@ -100,8 +103,7 @@ Gty = construct_Gt(y,h,K)
 # ADMM recursive update
 print('itr      residual          mean-sqr-error')
 itr = 0
-while (residual > tol) and (itr < max_itr):
-  mse = (1/sqrt(N))*(sqrt(sum(sum((x-z)**2))))
+while ((residual > tol) or (fluctuate <= patience)) and (itr < max_itr) :
   v_old = v
   u_old = u
   x_old = x
@@ -131,6 +133,12 @@ while (residual > tol) and (itr < max_itr):
   residualu = (1/sqrt(N))*(sqrt(sum(sum((u-u_old)**2))))
   residual = residualx + residualv + residualu
   itr = itr + 1
+  mse = (1/sqrt(N))*(sqrt(sum(sum((x-z)**2))))
+  if (mse < mse_min):
+    fluctuate = 0
+    mse_min = mse
+  else:
+    fluctuate += 1
   print(itr,' ',residual,'  ', mse)
   # end of ADMM recursive update
 
