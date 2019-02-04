@@ -53,7 +53,7 @@ tol = 10**-4
 lambd = 1./20.
 
 # data pre-processing: apply mask and add AWGN
-z = np.array(imread('./data/Art512.png'), dtype=np.float32) / 255.0
+z = np.array(imread('./data/shoes-hr-gray.png'), dtype=np.float32) / 255.0
 print('input image size: ',np.shape(z))
 [row,col]=np.shape(z)
 N=row*col
