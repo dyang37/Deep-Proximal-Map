@@ -37,10 +37,6 @@ elif denoiser == 1:
 elif denoiser == 2:
   print('using nlm denoiser...')
   imgext = '_nlm.png'
-  # optional tuning for nlm denoiser. Currently the code is using default patch setting from skimage library
-  patch_kw = dict(patch_size=5,      # 5x5 patches
-                patch_distance=6,  # 13x13 search area
-                multichannel=False)
 else:
   raise Exception('Error: unknown denoiser.')
 
