@@ -35,9 +35,9 @@ Replace `demo_inpaint.py` with `demo_sr.py` for super-resolution demo.
 
 ### Default Paramters:
 
-Maximum iteration: 30 (This is suboptimal for super-resolution. Increase this to 200 for best performance.)
+Maximum iteration: 200 for SR/100 for inpainting
 
-gamma: 1    update factor for rho
+gamma: 0.99 for SR/1 for inpainting    update factor for rho
 
 lambda: 0.01    Regularizer for image denoiser
 
