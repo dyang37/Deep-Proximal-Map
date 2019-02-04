@@ -45,7 +45,7 @@ else:
   raise Exception('Error: unknown denoiser.')
 
 # hyperparameters
-K = 2 # downsampling factor
+K = 8 # downsampling factor
 noise_level = 10./255.;
 rho = 1.
 gamma = 0.99
@@ -55,9 +55,12 @@ lambd = 0.01
 patience = 5
 
 # data pre-processing: apply mask and add AWGN
-z_in = np.array(imread('./data/shoes-hr-gray.png'), dtype=np.float32) / 255.0
+fig_in = 'shoes-hr-gray'
+z_in = np.array(imread('./data/'+fig_in+'.png'), dtype=np.float32) / 255.0
 # check if grayscale
 [rows_hr,cols_hr] = np.shape(z_in)[0:2]
+rows_lr = rows_hr//K
+cols_lr = cols_hr//K
 if (np.shape(z_in).__len__() > 2):
   # convert RGB to grayscale image
   z=np.zeros((rows_hr,cols_hr))
@@ -69,17 +72,17 @@ if (np.shape(z_in).__len__() > 2):
       z[i,j]=0.2989 * r + 0.5870 * g + 0.1140 * b
 else:
   z = z_in
+# truncate the image in case that rows_hr cannot be devided by K
+z = z[0:rows_lr*K, 0:cols_lr*K]
 print('input image size: ',np.shape(z))
 N=rows_hr*cols_hr
-rows_lr = rows_hr//K
-cols_lr = cols_hr//K
 h = gauss2D((9,9),1)
 y = correlate(z,h,mode='wrap')
 y = y[::K,::K] # downsample z by taking every Kth pixel
 np.random.seed(0)
 gauss = np.random.normal(0,1,np.shape(y))
 y = np.clip(y+noise_level*gauss,0,1)
-figname = 'SR_noisy_input'+imgext
+figname = str(K)+'_SR_noisy_input'+fig_in+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
 # ADMM initialization
@@ -139,6 +142,6 @@ while ((residual > tol) or (fluctuate <= patience)) and (itr < max_itr) :
 psnr = compare_psnr(z, x)
 print('PSNR of restored image: ',psnr)
 
-figname = 'SR_output_'+str(max_itr)+imgext
+figname = str(K)+'_SR_output_'+fig_in+imgext
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, np.clip(x,0,1))
