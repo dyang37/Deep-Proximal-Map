@@ -42,7 +42,7 @@ else:
   raise Exception('Error: unknown denoiser.')
 
 # hyperparameters
-K = 8 # downsampling factor
+K = 4 # downsampling factor
 noise_level = 10./255.;
 rho = 1.
 gamma = 0.99
@@ -55,23 +55,24 @@ patience = 5
 fig_in = 'shoes-hr-gray'
 z_in = np.array(imread('./data/'+fig_in+'.png'), dtype=np.float32) / 255.0
 # check if grayscale
-[rows_hr,cols_hr] = np.shape(z_in)[0:2]
-rows_lr = rows_hr//K
-cols_lr = cols_hr//K
+[rows_in,cols_in] = np.shape(z_in)[0:2]
+rows_lr = rows_in//K
+cols_lr = cols_in//K
 if (np.shape(z_in).__len__() > 2):
   # convert RGB to grayscale image
-  z=np.zeros((rows_hr,cols_hr))
-  for i in range(rows_hr):
-    for j in range(cols_hr):
+  z=np.zeros((rows_in,cols_in))
+  for i in range(rows_in):
+    for j in range(cols_in):
       r = z_in[i,j,0]
       g = z_in[i,j,1]
       b = z_in[i,j,2]
       z[i,j]=0.2989 * r + 0.5870 * g + 0.1140 * b
 else:
   z = z_in
-# truncate the image in case that rows_hr cannot be devided by K
+# truncate the image in case that rows_in cannot be devided by K
 z = z[0:rows_lr*K, 0:cols_lr*K]
 print('input image size: ',np.shape(z))
+[rows_hr,cols_hr] = np.shape(z)
 N=rows_hr*cols_hr
 h = gauss2D((9,9),1)
 y = correlate(z,h,mode='wrap')
