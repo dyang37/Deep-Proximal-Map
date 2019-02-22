@@ -46,4 +46,4 @@ rho: 1    Adaptive update rule for the residual
 nl_mean denoiser: patch_distance = 11, patch_size = 7
 
 ## Current issues to be addressed:
-For the super resolution problem, the aliasing effects increases rapidly for the case of large subsampling factors (8x and more). Initial guess is that the cutoff frequency for our anti-aliasing filter (currently a gaussian filter with variance 1) is above _&pi/8, therefore causing aliasing effects in high frequency components. 
+For the super resolution problem, the aliasing effects increases rapidly for the case of large subsampling factors (8x and more). Initial guess is that the cutoff frequency for our anti-aliasing filter (currently a gaussian filter with variance 1) is above &theta/8, therefore causing aliasing effects in high frequency components. 
