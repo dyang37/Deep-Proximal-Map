@@ -1,57 +1,27 @@
-import copy
+import numpy as np
 import sys
 import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
-sys.path.append(os.path.join(os.getcwd(), "./util"))
-sys.path.append(os.path.join(os.getcwd(), "./denoisers/DnCNN"))
-from dncnn import cnn_denoiser
+sys.path.append(os.path.join(os.getcwd(), "util"))
 from skimage.io import imread, imsave
-import numpy as np
 from math import sqrt
-from skimage.restoration import denoise_tv_chambolle as denoiser_tv
 from skimage.measure import compare_psnr
-from PIL import Image
-#import ADMM_SR as admm
-from keras.models import  model_from_json
-from sr_util import gauss2D, construct_G, construct_Gt, constructGGt
-from scipy.ndimage import correlate
-from scipy.misc import imresize
-from numpy.fft import fft2, ifft2
-from skimage.restoration import denoise_nl_means
+from sr_util import gauss2D # comment this out if you don't want to use Gaussian as anti-aliasing filter
+from sr_forward_model import construct_forward_model
+from plug_and_play_reconstruction import plug_and_play_reconstruction
+
 
 denoiser=int(sys.argv[1])
-if denoiser == 0:
-  # loading pre-trained cnn model...
-  print('using neural network denoiser...')
-  imgext = '_cnn.png'
-  model_dir=os.path.join('models',os.getcwd(),'./denoisers/DnCNN')
-  # load json and create model
-  json_file = open(os.path.join(model_dir,'model.json'), 'r')
-  loaded_model_json = json_file.read()
-  json_file.close()
-  model = model_from_json(loaded_model_json)
-  # load weights into new model
-  model.load_weights(os.path.join(model_dir,'model.h5'))
-elif denoiser == 1:
-  print('using total variation denoiser...')
-  imgext = '_tv.png'
-elif denoiser == 2:
-  print('using nlm denoiser...')
-  imgext = '_nlm.png'
-else:
-  raise Exception('Error: unknown denoiser.')
+denoiser_dict = {0:"DnCNN",1:"Total Variation",2:"Non-local Mean"}
+print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
 
 # hyperparameters
 K = 4 # downsampling factor
-noise_level = 10./255.;
+sigw = 10./255. # noise level
 rho = 1.
 gamma = 0.99
-max_itr = 200
-tol = 10**-4
 lambd = 0.01
-patience = 5
 
-# data pre-processing: apply mask and add AWGN
+# data pre-processing: convert image to grayscale and truncate image
 fig_in = 'shoes-hr-gray'
 z_in = np.array(imread('./data/'+fig_in+'.png'), dtype=np.float32) / 255.0
 # check if grayscale
@@ -72,74 +42,22 @@ else:
 # truncate the image in case that rows_in cannot be devided by K
 z = z[0:rows_lr*K, 0:cols_lr*K]
 print('input image size: ',np.shape(z))
-[rows_hr,cols_hr] = np.shape(z)
-N=rows_hr*cols_hr
+
+###### Your filter design goes HERE
 h = gauss2D((9,9),1)
-y = correlate(z,h,mode='wrap')
-y = y[::K,::K] # downsample z by taking every Kth pixel
-np.random.seed(0)
-gauss = np.random.normal(0,1,np.shape(y))
-y = np.clip(y+noise_level*gauss,0,1)
-figname = str(K)+'_SR_noisy_input'+fig_in+'.png'
+# call function to construct forward model: y=SH+W
+y = construct_forward_model(z, K, h, sigw)
+# save image
+figname = str(K)+'_SR_noisy_input.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
-# ADMM initialization
-v = imresize(y,[rows_hr,cols_hr])/255.
-x = v
-u = np.zeros(np.shape(v))
-residual = float("inf")
-mse_min = float("inf")
-fluctuate = 0
-GGt = constructGGt(h,K,rows_hr, cols_hr)
-Gty = construct_Gt(y,h,K)
+# ADMM iterative reconstruction
+map_img = plug_and_play_reconstruction(z,y,h,sigw,lambd,rho,gamma,K,denoiser)
 
-
-# ADMM recursive update
-print('itr      residual          mean-sqr-error')
-itr = 0
-while ((residual > tol) or (fluctuate <= patience)) and (itr < max_itr) :
-  v_old = v
-  u_old = u
-  x_old = x
-  # inversion
-  xtilde = v-u
-  rhs = Gty + rho*xtilde
-  G = construct_G(rhs, h, K)
-  Gt = construct_Gt(np.abs(ifft2(fft2(G)/(GGt+rho))),h,K)
-  x = (rhs - Gt)/rho
-  
-  # denoising
-  vtilde=x+u
-  vtilde = vtilde.clip(min=0,max=1)
-  sigma = sqrt(lambd/rho)
-  if denoiser == 0:
-    v = cnn_denoiser(vtilde, model)
-  elif denoiser == 1:
-    v = denoiser_tv(vtilde)
-  else:
-    v = denoise_nl_means(vtilde, sigma=sigma)
-  # update u
-  u = u+(x-v)
-  # update rho
-  rho=rho*gamma
-  residualx = (1/sqrt(N))*(sqrt(sum(sum((x-x_old)**2))))
-  residualv = (1/sqrt(N))*(sqrt(sum(sum((v-v_old)**2))))
-  residualu = (1/sqrt(N))*(sqrt(sum(sum((u-u_old)**2))))
-  residual = residualx + residualv + residualu
-  itr = itr + 1
-  mse = (1/sqrt(N))*(sqrt(sum(sum((x-z)**2))))
-  if (mse < mse_min):
-    fluctuate = 0
-    mse_min = mse
-  else:
-    fluctuate += 1
-  print(itr,' ',residual,'  ', mse)
-  # end of ADMM recursive update
-
-
-psnr = compare_psnr(z, x)
+# evaluate performance
+psnr = compare_psnr(z, map_img)
 print('PSNR of restored image: ',psnr)
-
-figname = str(K)+'_SR_output_'+fig_in+imgext
+# save reconstructed image
+figname = str(K)+'_SR_output_'+denoiser_dict[denoiser]+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
-imsave(fig_fullpath, np.clip(x,0,1))
+imsave(fig_fullpath, np.clip(map_img,0,1))

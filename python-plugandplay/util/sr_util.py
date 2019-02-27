@@ -19,7 +19,6 @@ def construct_Gt(x,h,K):
 # eigen decomposition for super-resolution
 # cols and rows should be divisible by K
 def constructGGt(h,K,rows,cols):
-  tol = 0.00005
   hth = convolve2d(h,np.rot90(h,2),'full')
   [rows_hth,cols_hth] = np.shape(hth)
   # center coordinates
@@ -33,16 +32,13 @@ def constructGGt(h,K,rows,cols):
   GGt = np.abs(fft2(g,[rows//K,cols//K]))
   return GGt
 
+# 2D gaussian mask - should give the same result as MATLAB's fspecial('gaussian',[shape],[sigma])   
 def gauss2D(shape=(3,3),sigma=0.5):
-    """
-    2D gaussian mask - should give the same result as MATLAB's
-    fspecial('gaussian',[shape],[sigma])
-    """
-    m,n = [(ss-1.)/2. for ss in shape]
-    y,x = np.ogrid[-m:m+1,-n:n+1]
-    h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
-    h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
-    sumh = h.sum()
-    if sumh != 0:
-        h /= sumh
-    return h
+  m,n = [(ss-1.)/2. for ss in shape]
+  y,x = np.ogrid[-m:m+1,-n:n+1]
+  h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
+  h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
+  sumh = h.sum()
+  if sumh != 0:
+    h /= sumh
+  return h
