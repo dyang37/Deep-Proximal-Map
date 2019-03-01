@@ -12,16 +12,18 @@ from plug_and_play_reconstruction import plug_and_play_reconstruction
 
 denoiser=int(sys.argv[1])
 denoiser_dict = {0:"DnCNN",1:"Total Variation",2:"Non-local Mean"}
+optim_dict = {0:"fft closed form approximation", 1:"icd update"}
 print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
-
-# hyperparameters
+################### hyperparameters
 K = 4 # downsampling factor
 sigw = 10./255. # noise level
-rho = 1.
-gamma = 0.99
-lambd = 0.01
-
-# data pre-processing: convert image to grayscale and truncate image
+lambd = 1/20
+gamma = 1
+beta = 1
+optim_method = 1 #0: Stanley's closed form solution 1: icd update
+print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
+max_itr = 200
+################### Data Proe-processing
 fig_in = 'shoes-hr-gray'
 z_in = np.array(imread('./data/'+fig_in+'.png'), dtype=np.float32) / 255.0
 # check if grayscale
@@ -43,7 +45,9 @@ else:
 z = z[0:rows_lr*K, 0:cols_lr*K]
 print('input image size: ',np.shape(z))
 
-###### Your filter design goes HERE
+
+################## Forward model construction
+# Your filter design goes HERE
 h = gauss2D((9,9),1)
 # call function to construct forward model: y=SH+W
 y = construct_forward_model(z, K, h, sigw)
@@ -51,10 +55,11 @@ y = construct_forward_model(z, K, h, sigw)
 figname = str(K)+'_SR_noisy_input.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
-# ADMM iterative reconstruction
-map_img = plug_and_play_reconstruction(z,y,h,sigw,lambd,rho,gamma,K,denoiser)
 
-# evaluate performance
+################## Plug and play ADMM iterative reconstruction
+map_img = plug_and_play_reconstruction(z,y,h,sigw,beta,lambd,gamma,max_itr, K,denoiser,optim_method)
+
+################## evaluate performance and save output image
 psnr = compare_psnr(z, map_img)
 print('PSNR of restored image: ',psnr)
 # save reconstructed image

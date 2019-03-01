@@ -4,6 +4,16 @@ from scipy.ndimage import correlate
 from scipy.signal import convolve2d
 from numpy.fft import fft2
 
+def construct_Gs(h,rows,cols,i,j,K):
+  [rows_h, cols_h] = np.shape(h)
+  h_img = np.zeros((rows,cols))
+  ctr_i_h = rows_h // 2
+  ctr_j_h = cols_h // 2
+  for di in range(-ctr_i_h,-ctr_i_h+rows_h):
+    for dj in range(-ctr_j_h,-ctr_j_h+cols_h):
+      h_img[(di+i)%rows,(dj+j)%cols] = h[di+ctr_i_h,dj+ctr_j_h]
+  return h_img[::K,::K]
+
 def construct_G(x,h,K):
   tmp = correlate(x,h,mode='wrap')
   y = tmp[::K,::K]

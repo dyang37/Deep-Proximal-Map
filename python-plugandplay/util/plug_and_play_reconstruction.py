@@ -9,7 +9,7 @@ from scipy.misc import imresize
 from dncnn import cnn_denoiser
 from skimage.restoration import denoise_tv_chambolle as denoiser_tv
 from skimage.restoration import denoise_nl_means
-from forward_model_optim import forward_model_optim
+from forward_model_optim import forward_model_optim, icd_update
 # This function performs ADMM iterative reconstruction for image super resolution problem
 # hr_img: ground_truth image. Only used for evaluation purpose
 # y: low resolution input image
@@ -23,8 +23,9 @@ from forward_model_optim import forward_model_optim
 # return value: x, the reconstructed high resolution image
 
 
-def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,rho,gamma,K,denoiser):
+def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,denoiser, optim_method):
   if denoiser == 0:
+    # you can replace model.json file and model.h5 file with any other pre-trained neural network
     model_dir=os.path.join('models',os.getcwd(),'./denoisers/DnCNN')
     # load json and create model
     json_file = open(os.path.join(model_dir,'model.json'), 'r')
@@ -44,9 +45,8 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,rho,gamma,K,denoiser):
   residual = float("inf")
   mse_min = float("inf")
   # hyperparameters
-  tol = 10**-4
+  tol = 10**-5
   patience = 10
-  max_itr = 200
   # iterative reconstruction
   print('itr      residual          mean-sqr-error')
   itr = 0
@@ -56,11 +56,11 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,rho,gamma,K,denoiser):
     x_old = x
     xtilde = v-u
     # forward model optimization step
-    x = forward_model_optim(x,xtilde,y,h,sigw,K, rho)
+    x = optimization_wrapper(x,xtilde,y,h,K,lambd,sigw,itr,optim_method)
     # denoising step
     vtilde = x + u
     vtilde = vtilde.clip(min=0,max=1)
-    sigma = sqrt(lambd/rho)
+    sigma = sqrt(beta/lambd)
     if denoiser == 0:
       v = cnn_denoiser(vtilde, model)
     elif denoiser == 1:
@@ -71,8 +71,8 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,rho,gamma,K,denoiser):
       raise Exception('Error: unknown denoiser.')
     # update u
     u = u+(x-v)
-    # update rho
-    rho = rho*gamma
+    # update lambd
+    lambd = lambd*gamma
     # calculate residual
     residualx = (1/sqrt(N))*(sqrt(sum(sum((x-x_old)**2))))
     residualv = (1/sqrt(N))*(sqrt(sum(sum((v-v_old)**2))))
@@ -89,3 +89,16 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,rho,gamma,K,denoiser):
     print(itr,' ',residual,'  ', mse)
   return x
 
+
+def optimization_wrapper(x,xtilde,y,h,K,lambd,sigw,itr,optim_method):
+  if optim_method == 0:
+    x = forward_model_optim(x,xtilde,y,h,K, lambd)
+  elif optim_method == 1:
+    if itr == 0:
+      for _ in range(10):
+        x = icd_update(x,xtilde,y,h,K,lambd,sigw)
+    else:
+      x = icd_update(x,xtilde,y,h,K,lambd,sigw)
+  else:
+    raise Exception('Error: unknown optimization method.')
+  return x
