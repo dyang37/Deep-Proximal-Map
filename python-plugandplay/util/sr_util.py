@@ -9,9 +9,12 @@ def construct_Gs(h,rows,cols,i,j,K):
   h_img = np.zeros((rows,cols))
   ctr_i_h = rows_h // 2
   ctr_j_h = cols_h // 2
-  for di in range(-ctr_i_h,-ctr_i_h+rows_h):
-    for dj in range(-ctr_j_h,-ctr_j_h+cols_h):
-      h_img[(di+i)%rows,(dj+j)%cols] = h[di+ctr_i_h,dj+ctr_j_h]
+  if (i-ctr_i_h >= 0) and (i-ctr_i_h+rows_h < rows) and (j-ctr_j_h>=0) and (j-ctr_j_h+cols_h < cols):
+    h_img[i-ctr_i_h:i-ctr_i_h+rows_h, j-ctr_j_h:j-ctr_j_h+cols_h] = h
+  else:
+    for di in range(-ctr_i_h,-ctr_i_h+rows_h):
+      for dj in range(-ctr_j_h,-ctr_j_h+cols_h):
+        h_img[(di+i)%rows,(dj+j)%cols] = h[di+ctr_i_h,dj+ctr_j_h]
   return h_img[::K,::K]
 
 def construct_G(x,h,K):
@@ -51,4 +54,16 @@ def gauss2D(shape=(3,3),sigma=0.5):
   sumh = h.sum()
   if sumh != 0:
     h /= sumh
+  return h
+
+def windowed_sinc(N, K):
+  if not N % 2: N += 1  # Make sure that N is odd.
+  n = np.arange(N)
+  hsinc = np.sinc((n - (N - 1) / 2.)/K)/K
+  w = np.blackman(N)
+  h_1d = hsinc * w
+  h = np.zeros((N,N))
+  for i in range(N):
+    for j in range(N):
+      h[i,j] = h_1d[i]*h_1d[j]
   return h

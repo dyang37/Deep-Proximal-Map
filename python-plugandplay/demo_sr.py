@@ -5,24 +5,25 @@ sys.path.append(os.path.join(os.getcwd(), "util"))
 from skimage.io import imread, imsave
 from math import sqrt
 from skimage.measure import compare_psnr
-from sr_util import gauss2D # comment this out if you don't want to use Gaussian as anti-aliasing filter
+from sr_util import gauss2D, windowed_sinc
 from sr_forward_model import construct_forward_model
 from plug_and_play_reconstruction import plug_and_play_reconstruction
-
+import matplotlib.pyplot as plt
 
 denoiser=int(sys.argv[1])
 denoiser_dict = {0:"DnCNN",1:"Total Variation",2:"Non-local Mean"}
 optim_dict = {0:"fft closed form approximation", 1:"icd update"}
 print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
 ################### hyperparameters
-K = 4 # downsampling factor
+K = 8 # downsampling factor
 sigw = 10./255. # noise level
-lambd = 1/20
-gamma = 1
+lambd = 1
+gamma = 0.99
 beta = 1
-optim_method = 1 #0: Stanley's closed form solution 1: icd update
+optim_method = 0 #0: Stanley's closed form solution 1: icd update
+max_itr = 300
+
 print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
-max_itr = 200
 ################### Data Proe-processing
 fig_in = 'shoes-hr-gray'
 z_in = np.array(imread('./data/'+fig_in+'.png'), dtype=np.float32) / 255.0
@@ -48,7 +49,12 @@ print('input image size: ',np.shape(z))
 
 ################## Forward model construction
 # Your filter design goes HERE
-h = gauss2D((9,9),1)
+#h = gauss2D((9,9),1)
+h = windowed_sinc(17,K)
+print("shape of filter: ",np.shape(h))
+#H = np.fft.fft2(h,(256,256))
+#plt.imshow(abs(H))
+#plt.show()
 # call function to construct forward model: y=SH+W
 y = construct_forward_model(z, K, h, sigw)
 # save image

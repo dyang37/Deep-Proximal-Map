@@ -4,12 +4,14 @@ import os
 from math import sqrt
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 sys.path.append(os.path.join(os.getcwd(), "./denoisers/DnCNN"))
+from skimage.io import imsave
 from keras.models import  model_from_json
 from scipy.misc import imresize
 from dncnn import cnn_denoiser
 from skimage.restoration import denoise_tv_chambolle as denoiser_tv
 from skimage.restoration import denoise_nl_means
 from forward_model_optim import forward_model_optim, icd_update
+
 # This function performs ADMM iterative reconstruction for image super resolution problem
 # hr_img: ground_truth image. Only used for evaluation purpose
 # y: low resolution input image
@@ -24,6 +26,7 @@ from forward_model_optim import forward_model_optim, icd_update
 
 
 def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,denoiser, optim_method):
+  denoiser_dict = {0:"DnCNN",1:"Total Variation",2:"Non-local Mean"}
   if denoiser == 0:
     # you can replace model.json file and model.h5 file with any other pre-trained neural network
     model_dir=os.path.join('models',os.getcwd(),'./denoisers/DnCNN')
@@ -40,6 +43,8 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
   cols_hr = cols_lr*K
   N = rows_hr*cols_hr
   v = imresize(y, [rows_hr, cols_hr])/255.
+  figname = str(K)+'_SR_baseline_'+denoiser_dict[denoiser]+'.png' 
+  imsave(figname, v)
   x = v
   u = np.zeros((rows_hr, cols_hr))
   residual = float("inf")
