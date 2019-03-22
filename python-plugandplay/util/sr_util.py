@@ -10,7 +10,7 @@ def construct_Gs(h,rows,cols,i,j,K):
   ctr_i_h = rows_h // 2
   ctr_j_h = cols_h // 2
   if (i-ctr_i_h >= 0) and (i-ctr_i_h+rows_h < rows) and (j-ctr_j_h>=0) and (j-ctr_j_h+cols_h < cols):
-    h_img[i-ctr_i_h:i-ctr_i_h+rows_h, j-ctr_j_h:j-ctr_j_h+cols_h] = h
+    h_img[i-ctr_i_h:i+ctr_i_h+1, j-ctr_j_h:j+ctr_j_h+1] = h
   else:
     for di in range(-ctr_i_h,-ctr_i_h+rows_h):
       for dj in range(-ctr_j_h,-ctr_j_h+cols_h):
@@ -35,9 +35,9 @@ def constructGGt(h,K,rows,cols):
   hth = convolve2d(h,np.rot90(h,2),'full')
   [rows_hth,cols_hth] = np.shape(hth)
   # center coordinates
-  yc = int(np.ceil(rows_hth/2.))
-  xc = int(np.ceil(cols_hth/2.))
-  L = int(np.ceil(rows_hth/K))   # width of the new filter
+  yc = rows_hth//2
+  xc = cols_hth//2
+  L = int(np.ceil(rows_hth/K))  # width of the new filter
   g = np.zeros((L,L))
   for i in range(-(L//2),L//2+1):
     for j in range(-(L//2),L//2+1):
@@ -56,14 +56,15 @@ def gauss2D(shape=(3,3),sigma=0.5):
     h /= sumh
   return h
 
-def windowed_sinc(N, K):
-  if not N % 2: N += 1  # Make sure that N is odd.
-  n = np.arange(N)
-  hsinc = np.sinc((n - (N - 1) / 2.)/K)/K
-  w = np.blackman(N)
+def windowed_sinc(K):
+  p = 4*K+1
+  n = np.arange(p)
+  hsinc = np.sinc((n - (p - 1) / 2.)/K)/K
+  w = np.hamming(p)
   h_1d = hsinc * w
-  h = np.zeros((N,N))
-  for i in range(N):
-    for j in range(N):
+  h_1d = h_1d / np.sum(h_1d)
+  h = np.zeros((p,p))
+  for i in range(p):
+    for j in range(p):
       h[i,j] = h_1d[i]*h_1d[j]
   return h

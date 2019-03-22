@@ -11,6 +11,10 @@ from dncnn import cnn_denoiser
 from skimage.restoration import denoise_tv_chambolle as denoiser_tv
 from skimage.restoration import denoise_nl_means
 from forward_model_optim import forward_model_optim, icd_update
+from construct_forward_model import construct_forward_model
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # This function performs ADMM iterative reconstruction for image super resolution problem
 # hr_img: ground_truth image. Only used for evaluation purpose
@@ -42,7 +46,23 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
   rows_hr = rows_lr*K
   cols_hr = cols_lr*K
   N = rows_hr*cols_hr
-  v = imresize(y, [rows_hr, cols_hr])/255.
+  # use GGMRF as prior 
+  g = np.array([[1/12,1/6,1/12],[1/6,0,1/6],[1/12,1/6,1/12]])
+  p = 2 #### power param for GGMRF
+  # estimate sigx
+  sigx = 0
+  for i in range(rows_hr):
+    for j in range(cols_hr):
+      for di in range(-1,2):
+        for dj in range(-1,2):
+          if(i+di>=0 and i+di<rows_hr and j+dj>=0 and j+dj<cols_hr):
+            sigx += g[di+1,dj+1] * abs(hr_img[i,j]-hr_img[i+di,j+dj])**p
+  # divide by 2 because we counted each clique twice
+  sigx /= 2.
+  sigx = (sigx/N)**(1/p)
+  print('estimated GGMRF sigma = ',sigx)
+  #v = imresize(y, [rows_hr, cols_hr])/255.
+  v = np.random.rand(rows_hr, cols_hr)
   figname = str(K)+'_SR_baseline_'+denoiser_dict[denoiser]+'.png' 
   imsave(figname, v)
   x = v
@@ -55,6 +75,8 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
   # iterative reconstruction
   print('itr      residual          mean-sqr-error')
   itr = 0
+  forward_cost = []
+  cost = []
   while((residual > tol) or (fluctuate <= patience)) and (itr < max_itr):
     v_old = v
     u_old = u
@@ -76,6 +98,20 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
       raise Exception('Error: unknown denoiser.')
     # update u
     u = u+(x-v)
+    # calculate current cost
+    Gx = construct_forward_model(x,K,h,0)
+    forward_cost.append(sum(sum((Gx-y)**2))/(2*sigw*sigw) + sum(sum((x-xtilde)**2))*lambd/2)
+    ggmrf_sum = 0
+    for i in range(rows_hr):
+      for j in range(cols_hr):
+        for di in range(-1,2):
+          for dj in range(-1,2):
+            ggmrf_sum += g[di+1,dj+1] * abs(v[i,j]-v[(i+di)%rows_hr,(j+dj)%cols_hr])**p
+    # divide by 2 because we counted each clique twice
+    ggmrf_sum /= 2.
+    cost_prior = ggmrf_sum/(p*sigx**p)
+ 
+    cost.append(sum(sum((Gx-y)**2))/(2*sigw*sigw) + beta*cost_prior + (sum(sum((x-v+u)**2)) - sum(sum(u**2)))*lambd/2)
     # update lambd
     lambd = lambd*gamma
     # calculate residual
@@ -83,7 +119,6 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
     residualv = (1/sqrt(N))*(sqrt(sum(sum((v-v_old)**2))))
     residualu = (1/sqrt(N))*(sqrt(sum(sum((u-u_old)**2))))
     residual = residualx + residualv + residualu
-    itr = itr + 1
     # calculate mse
     mse = (1/sqrt(N))*(sqrt(sum(sum((x-hr_img)**2))))
     if (mse < mse_min):
@@ -92,12 +127,26 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
     else:
       fluctuate += 1
     print(itr,' ',residual,'  ', mse)
+    if itr % 5 == 0:
+      figname = str(K)+'_SR_method'+str(optim_method)+'_itr'+str(itr)+'.png'
+      imsave(figname, np.clip(x,0,1))
+    itr = itr + 1
+  # end ADMM recursive update
+  plt.plot(list(range(forward_cost.__len__())),forward_cost)
+  plt.xlabel('iteration')
+  plt.ylabel('forward model cost')
+  plt.savefig('forward_cost_method'+str(optim_method)+'.png')
+  plt.figure()
+  plt.plot(list(range(cost.__len__())),cost)
+  plt.xlabel('iteration')
+  plt.ylabel('ADMM cost')
+  plt.savefig('admm_cost_method'+str(optim_method)+'.png')
   return x
 
 
 def optimization_wrapper(x,xtilde,y,h,K,lambd,sigw,itr,optim_method):
   if optim_method == 0:
-    x = forward_model_optim(x,xtilde,y,h,K, lambd)
+    x = forward_model_optim(x,xtilde,y,h,K, lambd, sigw)
   elif optim_method == 1:
     if itr == 0:
       for _ in range(10):
