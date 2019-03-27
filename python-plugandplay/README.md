@@ -16,6 +16,8 @@ scikit-image
 
 matplotlib
 
+Cython
+
 ## Running the demos:
 1. Move to Plugandplay-python directory
 
@@ -30,6 +32,15 @@ Replace `demo_inpaint.py` with `demo_sr.py` for super-resolution demo.
 1: Total Variation
 
 2: Non-local Mean ([Paper](https://ieeexplore.ieee.org/document/1467423))
+
+## (New!!) Proximal map optimization method choices (For super resolution only)
+Optimization method can be changed by modifying parameter "optim_method" at line 24 in demo_sr.py. Below are the available choices:
+
+0: Approximation by Fourier Decomposition ([Paper](https://ieeexplore.ieee.org/document/1467423))
+
+1: Iterative Coordinate Descent(ICD)
+
+Note that ICD code is written in C++ and called by python with Cython. You need to run `./Cython_setup.sh` when using it the first time.
 
 ## Parameter Tuning
 
