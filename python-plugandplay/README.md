@@ -46,11 +46,11 @@ Note that ICD code is written in C++ and called by python with Cython. You need 
 
 ### Default Paramters:
 
-Maximum iteration: 200 for SR/100 for inpainting
+Maximum iteration: 40 for SR; 100 for inpainting
 
-gamma: 0.99 for SR/1 for inpainting    update factor for rho
+gamma: 1    update factor for rho
 
-lambda: 0.01    Regularizer for image denoiser
+lambda: 50   Regularizer for image denoiser
 
 rho: 1    Adaptive update rule for the residual
 
