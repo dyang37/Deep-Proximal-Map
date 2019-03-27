@@ -18,11 +18,11 @@ print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
 ################### hyperparameters
 K = 4 # downsampling factor
 sigw = 10./255. # noise level
-lambd = 40
+lambd = 50
 gamma = 1
 beta = 1
 optim_method = 1 #0: Stanley's closed form solution 1: icd update
-max_itr = 50
+max_itr = 20
 
 print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
 ################### Data Proe-processing

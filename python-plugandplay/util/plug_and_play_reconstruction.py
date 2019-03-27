@@ -10,13 +10,12 @@ from scipy.misc import imresize
 from dncnn import cnn_denoiser
 from skimage.restoration import denoise_tv_chambolle as denoiser_tv
 from skimage.restoration import denoise_nl_means
-from forward_model_optim import forward_model_optim, icd_update
+from forward_model_optim import forward_model_optim
 from construct_forward_model import construct_forward_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from icdwrapper import Pyicd
-import timeit
 
 # This function performs ADMM iterative reconstruction for image super resolution problem
 # hr_img: ground_truth image. Only used for evaluation purpose
@@ -87,18 +86,7 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
     x_old = x
     xtilde = v-u
     # forward model optimization step
-    #x = optimization_wrapper(x,xtilde,y,h,K,lambd,sigw,itr,optim_method)
-    if itr == 0:
-      for _ in range(10):
-        tic=timeit.default_timer()
-        x = icd_cpp.update(x,xtilde)
-        toc=timeit.default_timer()
-        #print('icd time elapsed: ',toc-tic)
-    else:
-      tic=timeit.default_timer()
-      x = np.array(icd_cpp.update(x,xtilde))
-      toc=timeit.default_timer()
-      #print('icd time elapsed: ',toc-tic)
+    x = optimization_wrapper(icd_cpp,x,xtilde,y,h,K,lambd,sigw,itr,optim_method)
     # denoising step
     vtilde = x + u
     vtilde = vtilde.clip(min=0,max=1)
@@ -159,17 +147,15 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
   return x
 
 
-def optimization_wrapper(x,xtilde,y,h,K,lambd,sigw,itr,optim_method):
+def optimization_wrapper(icd_cpp,x,xtilde,y,h,K,lambd,sigw,itr,optim_method):
   if optim_method == 0:
     x = forward_model_optim(x,xtilde,y,h,K, lambd, sigw)
   elif optim_method == 1:
     if itr == 0:
       for _ in range(10):
-        x = icd_update(x,xtilde,y,h,K,lambd,sigw)
+        x = icd_cpp.update(x,xtilde)
     else:
-      imsave('./util/xtilde.tiff',xtilde)
-      imsave('./util/x.tiff',x)
-      x = icd_update(x,xtilde,y,h,K,lambd,sigw)
+      x = icd_cpp.update(x,xtilde)
   else:
     raise Exception('Error: unknown optimization method.')
-  return x
+  return np.array(x)
