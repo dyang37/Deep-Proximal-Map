@@ -21,10 +21,12 @@ Cython
 ## Running the demos:
 1. Move to Plugandplay-python directory
 
-2. run `python demo_inpaint.py <prior>`. Where `<choice>` is the prior model option. See [Prior model choices](#Prior-model-choices) for further details.
+2. Run `./Cython_setup.sh` to set up cpp wrapper for ICD code
+
+3. run `python demo_inpaint.py <prior>`. Where `<choice>` is the prior model option. See [Prior model choices](#Prior-model-choices) for further details.
 Replace `demo_inpaint.py` with `demo_sr.py` for super-resolution demo.
 
-3. Output image will be saved in Plugandplay-python directory.
+4. Output image will be saved in Plugandplay-python directory.
 
 ## Prior model choices 
 0: Convolutional Neural Network ([Source Code](https://github.com/cszn/DnCNN), [Paper](https://arxiv.org/pdf/1608.03981.pdf))
