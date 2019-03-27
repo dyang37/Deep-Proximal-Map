@@ -22,7 +22,7 @@ lambd = 50
 gamma = 1
 beta = 1
 optim_method = 1 #0: Stanley's closed form solution 1: icd update
-max_itr = 20
+max_itr = 40
 
 print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
 ################### Data Proe-processing
