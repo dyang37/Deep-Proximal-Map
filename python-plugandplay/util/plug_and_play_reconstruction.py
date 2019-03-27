@@ -15,6 +15,8 @@ from construct_forward_model import construct_forward_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from icdwrapper import Pyicd
+import timeit
 
 # This function performs ADMM iterative reconstruction for image super resolution problem
 # hr_img: ground_truth image. Only used for evaluation purpose
@@ -46,6 +48,8 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
   rows_hr = rows_lr*K
   cols_hr = cols_lr*K
   N = rows_hr*cols_hr
+  # initialize cpp wrapper for icd
+  icd_cpp = Pyicd(y,h,K,lambd,sigw);
   # use GGMRF as prior 
   g = np.array([[1/12,1/6,1/12],[1/6,0,1/6],[1/12,1/6,1/12]])
   p = 2 #### power param for GGMRF
@@ -83,7 +87,18 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
     x_old = x
     xtilde = v-u
     # forward model optimization step
-    x = optimization_wrapper(x,xtilde,y,h,K,lambd,sigw,itr,optim_method)
+    #x = optimization_wrapper(x,xtilde,y,h,K,lambd,sigw,itr,optim_method)
+    if itr == 0:
+      for _ in range(10):
+        tic=timeit.default_timer()
+        x = icd_cpp.update(x,xtilde)
+        toc=timeit.default_timer()
+        #print('icd time elapsed: ',toc-tic)
+    else:
+      tic=timeit.default_timer()
+      x = np.array(icd_cpp.update(x,xtilde))
+      toc=timeit.default_timer()
+      #print('icd time elapsed: ',toc-tic)
     # denoising step
     vtilde = x + u
     vtilde = vtilde.clip(min=0,max=1)
@@ -152,6 +167,8 @@ def optimization_wrapper(x,xtilde,y,h,K,lambd,sigw,itr,optim_method):
       for _ in range(10):
         x = icd_update(x,xtilde,y,h,K,lambd,sigw)
     else:
+      imsave('./util/xtilde.tiff',xtilde)
+      imsave('./util/x.tiff',x)
       x = icd_update(x,xtilde,y,h,K,lambd,sigw)
   else:
     raise Exception('Error: unknown optimization method.')

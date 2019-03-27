@@ -57,7 +57,7 @@ def gauss2D(shape=(3,3),sigma=0.5):
   return h
 
 def windowed_sinc(K):
-  p = 4*K+1
+  p = 8*K+1
   n = np.arange(p)
   hsinc = np.sinc((n - (p - 1) / 2.)/K)/K
   w = np.hamming(p)
