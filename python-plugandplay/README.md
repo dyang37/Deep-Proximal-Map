@@ -33,7 +33,7 @@ Cython
 4. Output image will be saved in Plugandplay-python directory.
 
 ## Prior model choices 
-0: Convolutional Neural Network ([Source Code](https://github.com/cszn/DnCNN), [Paper](https://arxiv.org/pdf/1608.03981.pdf))
+0(default option): Convolutional Neural Network ([Source Code](https://github.com/cszn/DnCNN), [Paper](https://arxiv.org/pdf/1608.03981.pdf))
 
 1: Total Variation
 
@@ -42,7 +42,7 @@ Cython
 ## Proximal map optimization method choices
 Optimization method can be changed by modifying parameter "optim_method" at line 24 in demo_sr.py. Below are the available choices:
 
-0: Approximation by Fourier Decomposition ([Paper](https://ieeexplore.ieee.org/document/1467423))
+0(default option): Approximation by Fourier Decomposition ([Paper](https://ieeexplore.ieee.org/document/1467423))
 
 1: Iterative Coordinate Descent(ICD)
 
