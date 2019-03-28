@@ -1,6 +1,5 @@
 import numpy as np
-import sys
-import os
+import sys,os,argparse
 sys.path.append(os.path.join(os.getcwd(), "util"))
 from skimage.io import imread, imsave
 from math import sqrt
@@ -11,17 +10,24 @@ from plug_and_play_reconstruction import plug_and_play_reconstruction
 import matplotlib.pyplot as plt
 import scipy.io as io
 
-denoiser=int(sys.argv[1])
+################## parse command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-p', action='store', dest='denoiser', help='Denoiser choice. 0: DnCNN; 1: TV; 2: nlm',type=int, default=0)
+parser.add_argument('-f', action='store', dest='optim', help='proximal map update choce. 0: fourier decomposition; 1: ICD',type=int, default=0)
+args = parser.parse_args()
+denoiser = args.denoiser
+optim_method = args.optim #0: Stanley's closed form solution 1: icd update
 denoiser_dict = {0:"DnCNN",1:"Total Variation",2:"Non-local Mean"}
 optim_dict = {0:"fft closed form approximation", 1:"icd update"}
 print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
+
+
 ################### hyperparameters
 K = 4 # downsampling factor
 sigw = 10./255. # noise level
 lambd = 50
 gamma = 1
 beta = 1
-optim_method = 1 #0: Stanley's closed form solution 1: icd update
 max_itr = 40
 
 print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
