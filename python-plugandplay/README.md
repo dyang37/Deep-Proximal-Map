@@ -24,10 +24,7 @@ Cython
 2. Run `./Cython_setup.sh` to set up cpp wrapper for ICD code
 
 3. run `python demo_sr.py -p <prior> -f <forward>`. 
-
 <prior> is the prior model option. See [Prior model choices](#Prior-model-choices) for further details.
-
-
 <forward> is the optimization method for forward model proximal map update. See [Proximal Map Update Choices](#Proximal-map-optimization-method-choices) for further details.
 
 4. Output image will be saved in Plugandplay-python directory.
