@@ -16,6 +16,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from icdwrapper import Pyicd
+import timeit
 
 # This function performs ADMM iterative reconstruction for image super resolution problem
 # hr_img: ground_truth image. Only used for evaluation purpose
@@ -153,9 +154,15 @@ def optimization_wrapper(icd_cpp,x,xtilde,y,h,K,lambd,sigw,itr,optim_method):
   elif optim_method == 1:
     if itr == 0:
       for _ in range(10):
+        tic=timeit.default_timer()
         x = icd_cpp.update(x,xtilde)
+        toc=timeit.default_timer()
+        print('icd time elapsed: ',toc-tic)
     else:
+      tic=timeit.default_timer()
       x = icd_cpp.update(x,xtilde)
+      toc=timeit.default_timer()
+      print('icd time elapsed: ',toc-tic)
   else:
     raise Exception('Error: unknown optimization method.')
   return np.array(x)

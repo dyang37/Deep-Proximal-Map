@@ -21,7 +21,5 @@ class icd{
         std::vector< std::vector<double> > y;
         std::vector< std::vector<double> > h;
         std::vector< std::vector<double> > e;
-        std::vector< std::vector<double> > Gs, Hs;
         double apply_h(int i, int j, int rows, int cols, std::vector< std::vector<double> >& x);
-        void down_sample(std::vector< std::vector<double> >& x_lr, std::vector< std::vector<double> >& x_hr);
 };

@@ -1,5 +1,4 @@
 #include <iostream>
-#include <algorithm>
 #include <vector>
 #include <cmath>
 #include <numeric>
@@ -30,30 +29,12 @@ icd::icd(std::vector< std::vector<double> >y_py, std::vector< std::vector<double
   std::vector<double> zero_row_hr(cols_hr,0);
   for (int i = 0 ; i < rows_lr; ++i){
     e.push_back(zero_row_lr);
-    Gs.push_back(zero_row_lr);
-  }
-  for (int i = 0; i < rows_hr; ++i)
-    Hs.push_back(zero_row_hr);
-    // initialize Hx
-  for (int i = -h_rows/2; i <= h_rows/2; ++i){
-    for (int j = -h_cols/2; j <= h_cols/2; ++j){
-      Hs[circ(i,rows_hr)][circ(j,cols_hr)] = h[i+h_rows/2][j+h_cols/2];
-    }
   }
 }
 
 icd::~icd(){
 }
 
-
-void icd::down_sample(std::vector< std::vector<double> >& hr_img, std::vector< std::vector<double> >& lr_img){
-  for (int i = 0; i < rows_lr; ++i){
-    for (int j = 0; j < cols_lr; ++j){
-      lr_img[i][j] = hr_img[i*K][j*K];
-    }
-  }
-  return;
-}
 
 std::vector< std::vector<double> > icd::update(std::vector< std::vector<double> > x, std::vector< std::vector<double> > xtilde){
   double GtG, etG, alpha;
@@ -67,33 +48,30 @@ std::vector< std::vector<double> > icd::update(std::vector< std::vector<double> 
   // icd main loop
   for (int i = 0; i < rows_hr; ++i){
     for (int j = 0; j < cols_hr; ++j){
-      // calculate Gs
-      down_sample(Hs, Gs);
       // calculate inner products
       etG = 0.;
       GtG = 0.;
-      for (int di = 0; di < rows_lr; ++di){
-        for (int dj = 0; dj < cols_lr; ++dj){
-          etG += e[di][dj] * Gs[di][dj];
-          GtG += Gs[di][dj] * Gs[di][dj];
+      for (int di = -h_rows/2; di <= h_rows/2; ++di){
+        for (int dj = -h_cols/2; dj <= h_cols/2; ++dj){
+          if ((circ(di+i,rows_hr)%K == 0) && (circ(dj+j,cols_hr)%K == 0)){ 
+            etG += e[circ(di+i,rows_hr)/K][circ(dj+j,cols_hr)/K] * h[di+h_rows/2][dj+h_cols/2];
+            GtG += h[di+h_rows/2][dj+h_cols/2]*h[di+h_rows/2][dj+h_cols/2];
+          }
         }
       }
       alpha = std::max(-x[i][j],(lambd*(xtilde[i][j]-x[i][j]) - etG/(sigw*sigw)) / (lambd + GtG/(sigw*sigw)));
       //std::cout<<"GtG="<<GtG<<std::endl;
       x[i][j] = x[i][j] + alpha;
       // update error image
-      for (int k = 0; k < rows_lr; ++k){
-        for (int l = 0; l < cols_lr; ++l){
-          e[k][l] += Gs[k][l]*alpha;
+      for (int di = -h_rows/2; di <= h_rows/2; ++di){
+        for (int dj = -h_cols/2; dj <= h_cols/2; ++dj){
+          if ((circ(di+i,rows_hr)%K == 0) && (circ(dj+j,cols_hr)%K == 0)){
+            e[circ(di+i,rows_hr)/K][circ(dj+j,cols_hr)/K] += alpha * h[di+h_rows/2][dj+h_cols/2];
+          }
         }
-      }
-      // shift Hx
-      for (int di = 0; di < rows_hr; ++di){
-        std::rotate(Hs.at(di).begin(), Hs.at(di).begin() + Hs.at(di).size()-1, Hs.at(di).end());
-      }
-    }
-    std::rotate(Hs.begin(), Hs.begin() + Hs.size()-1, Hs.end());
-  } 
+      } // end update error image
+    } // end for j
+  } // end for i
   return x;
 }
 
