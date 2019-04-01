@@ -13,7 +13,7 @@ import scipy.io as io
 ################## parse command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('-p', action='store', dest='denoiser', help='Denoiser choice. 0: DnCNN; 1: TV; 2: nlm',type=int, default=0)
-parser.add_argument('-f', action='store', dest='optim', help='proximal map update choce. 0: fourier decomposition; 1: ICD',type=int, default=0)
+parser.add_argument('-f', action='store', dest='optim', help='proximal map update choce. 0: fourier decomposition; 1: ICD',type=int, default=1)
 args = parser.parse_args()
 denoiser = args.denoiser
 optim_method = args.optim #0: Stanley's closed form solution 1: icd update
