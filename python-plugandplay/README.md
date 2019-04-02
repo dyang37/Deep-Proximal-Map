@@ -45,7 +45,7 @@ Optimization method can be changed by modifying parameter "optim_method" at line
 
 1: Iterative Coordinate Descent(ICD)
 
-Note that ICD code is written in C++ and called by python with Cython. You need to run `./Cython_setup.sh` when using it the first time.
+Note that ICD code is written in C++ and called by python with Cython. You need to run `./Cython_setup.sh` when using it the first time (or when you make changes to icd.cpp or icd.h).
 
 ## Parameter Tuning
 
