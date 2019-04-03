@@ -59,7 +59,7 @@ std::vector< std::vector<double> > icd::update(std::vector< std::vector<double> 
           }
         }
       }
-      alpha = std::max(-x[i][j],(lambd*(xtilde[i][j]-x[i][j]) - etG/(sigw*sigw)) / (lambd + GtG/(sigw*sigw)));
+      alpha = (lambd*(xtilde[i][j]-x[i][j]) - etG/(sigw*sigw)) / (lambd + GtG/(sigw*sigw));
       //std::cout<<"GtG="<<GtG<<std::endl;
       x[i][j] = x[i][j] + alpha;
       // update error image

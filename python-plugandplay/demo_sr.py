@@ -6,7 +6,7 @@ from math import sqrt
 from skimage.measure import compare_psnr
 from sr_util import gauss2D, windowed_sinc
 from construct_forward_model import construct_forward_model
-from plug_and_play_reconstruction import plug_and_play_reconstruction
+from icd_simulation import icd_simulation
 import matplotlib.pyplot as plt
 import scipy.io as io
 
@@ -60,19 +60,16 @@ print('input image size: ',np.shape(z))
 h = windowed_sinc(K)
 io.savemat('h_data.mat', mdict={'h': h})
 # call function to construct forward model: y=SH+W
-y = construct_forward_model(z, K, h, sigw)
+y = construct_forward_model(z, K, h, 0)
 # save image
 figname = str(K)+'_SR_noisy_input.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
 
 ################## Plug and play ADMM iterative reconstruction
-map_img = plug_and_play_reconstruction(z,y,h,sigw,beta,lambd,gamma,max_itr, K,denoiser,optim_method)
-
+map_img = icd_simulation(z,y,h,sigw,lambd,K)
 ################## evaluate performance and save output image
 psnr = compare_psnr(z, map_img)
 print('PSNR of restored image: ',psnr)
 # save reconstructed image
-figname = str(K)+'_SR_output_method'+str(optim_method)+'.png'
-fig_fullpath = os.path.join(os.getcwd(),figname)
-imsave(fig_fullpath, np.clip(map_img,0,1))
+imsave('icd_simulation_output.png',np.clip(map_img,0,1))
