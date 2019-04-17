@@ -1,4 +1,4 @@
-from scipy.ndimage import correlate
+from scipy.ndimage import convolve
 import numpy as np
 # function to construct forward model for plug and play super resolution problem
 # z: input ground truth image
@@ -8,7 +8,7 @@ import numpy as np
 # output: y = SHz+W
 def construct_forward_model(z, K, h, sigw):
   [rows_hr,cols_hr] = np.shape(z)
-  y = correlate(z,h,mode='wrap')
+  y = convolve(z,h,mode='wrap')
   y = y[::K,::K] # downsample z by taking every Kth pixel
   np.random.seed(0)
   gauss = np.random.normal(0,1,np.shape(y))

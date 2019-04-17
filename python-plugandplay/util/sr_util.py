@@ -52,6 +52,7 @@ def gauss2D(shape=(3,3),sigma=0.5):
   h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
   h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
   sumh = h.sum()
+  print('sumh=',sumh)
   if sumh != 0:
     h /= sumh
   return h
@@ -67,4 +68,9 @@ def windowed_sinc(K):
   for i in range(p):
     for j in range(p):
       h[i,j] = h_1d[i]*h_1d[j]
+  return h
+
+def avg_filt(p):
+  h=np.ones((p,p))
+  h=h/np.sum(h[:])
   return h
