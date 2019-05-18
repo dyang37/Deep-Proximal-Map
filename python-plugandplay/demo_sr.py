@@ -24,13 +24,10 @@ print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
 
 ################### hyperparameters
 K = 4 # downsampling factor
-sigw = 10./255. # noise level
-#siglam = sigw
-#lambd = 1./(siglam*siglam)
-lambd=50.
-gamma = 1
-beta = 1
-max_itr = 40
+sigw = 60./255. # noise level
+siglam = 60./255.
+
+lambd = 1./(siglam*siglam)
 
 print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
 ################### Data Proe-processing
@@ -58,19 +55,19 @@ print('input image size: ',np.shape(z))
 
 ################## Forward model construction
 # Your filter design goes HERE
-h1 = gauss2D((33,33),1)
-h2 = windowed_sinc(K)
-h3=avg_filt(9)
-h_list=[h1,h2,h3]
-#io.savemat('h_data.mat', mdict={'h': h})
 # call function to construct forward model: y=SH+W
-h_name_list=['gauss','sinc','avg_filt']
-for h,filt_choice in zip(h_list,h_name_list):
-  print(filt_choice)
-  y = construct_forward_model(z, K, h, 0)
+#for h,filt_choice in zip(h_list,h_name_list):
+  #print(filt_choice)
+h = windowed_sinc(K)
+#h = gauss2D((33,33),1)
+#h = avg_filt(9)
+filt_choice = 'sinc'
+print("filter choice: ",filt_choice)
+# y = Gz. We deliberately make awgn=0 for the purpose of experiments
+y = construct_forward_model(z, K, h, 0)
   # save image
-  figname = str(K)+'_SR_noisy_input_'+filt_choice+'.png'
-  fig_fullpath = os.path.join(os.getcwd(),figname)
-  imsave(fig_fullpath, y)
+figname = str(K)+'_SR_noisy_input_'+filt_choice+'.png'
+fig_fullpath = os.path.join(os.getcwd(),figname)
+imsave(fig_fullpath, y)
   ################## Plug and play ADMM iterative reconstruction
-  icd_simulation(z,y,h,sigw,lambd,K,filt_choice)
+icd_simulation(z,y,h,sigw,lambd,K,filt_choice)

@@ -1,4 +1,5 @@
-import os,sys
+import os,sys,glob
+from skimage.io import imread
 sys.path.append(os.path.join(os.getcwd(), "../util"))
 from construct_forward_model import construct_forward_model
 from sr_util import windowed_sinc, gauss2D, avg_filt
@@ -11,35 +12,49 @@ from keras.optimizers import Adam
 import pickle
 import matplotlib.pyplot as plt
 
-n_dicts = 10
-cutoff_idx = n_dicts*1800
+def to_gray(x_in, K):
+  [rows_in,cols_in] = np.shape(x_in)[0:2]
+  rows_out = rows_in//K*K
+  cols_out = cols_in//K*K
+  x = np.zeros((rows_out, cols_out))
+  for i in range(rows_out):
+    for j in range(cols_out):
+      r = x_in[i,j,0]
+      g = x_in[i,j,1]
+      b = x_in[i,j,2]
+      x[i,j]=0.2989 * r + 0.5870 * g + 0.1140 * b
+  return x
 
 _train = True
 sig = 60./255.
 sigw = 60./255.
 K = 4
-#h = windowed_sinc(K)
-h = gauss2D((33,33),1)
+h = windowed_sinc(K)
+#h = gauss2D((33,33),1)
 #h = avg_filt(9)
-forward_name = 'gauss'
-model_name = 'model_'+forward_name+'_sig60'
+forward_name = 'sinc'
+model_name = 'model_'+forward_name+'_sig60_realim'
 
 x=[]
 y=[]
 v=[]
 fv=[]
-for n_dict in range(n_dicts):
-  dict_name = '/root/ML/datasets/pseudo-proximal-map-dict-'+str(n_dict)+'-sig60-'+forward_name+'.dat'
-  dataset = pickle.load(open(dict_name,"rb"))
-  x.append(dataset["x"])
-  y.append(dataset["y"])
-  fv.append(dataset["fv"])
-  v.append(dataset["v"])
 
-x=np.vstack(x)
-y=np.vstack(y)
-fv=np.vstack(fv)
-v=np.vstack(v)
+n_samples = 0
+
+database_dir = os.path.abspath('/root/ML/datasets/pmap')
+for filename in glob.glob('/root/ML/datasets/pmap/*/*.jpg'):
+  #print(filename)
+  n_samples += 1
+  x_in = np.array(imread(filename), dtype=np.float32) / 255.0
+  x_img = to_gray(x_in, K)
+  v_img = np.random.normal(x_img,sig)
+  x.append(x_img)
+  v.append(v_img)
+  y.append(construct_forward_model(x_img, K, h, sigw))
+  fv.append(construct_forward_model(v_img, K, h, 0))
+
+cutoff_idx = n_samples*9//10
 
 x_train = x[:cutoff_idx]
 v_train = v[:cutoff_idx]
@@ -47,13 +62,13 @@ y_train = y[:cutoff_idx]
 fv_train = fv[:cutoff_idx]
 gd_train = np.subtract(x_train,v_train)
 
-rows_hr = x_train.shape[1]
-cols_hr = x_train.shape[2]
+rows_hr = np.shape(x_train)[1]
+cols_hr = np.shape(x_train)[2]
 print('rows_hr=',rows_hr)
 print('cols_hr=',cols_hr)
-in_shp_fv = fv_train.shape[1:]
-in_shp_y = y_train.shape[1:]
-inshp_v = v_train.shape[1:]
+in_shp_fv = np.shape(fv_train)[1:]
+in_shp_y = np.shape(y_train)[1:]
+inshp_v = np.shape(v_train)[1:]
 K0 = inshp_v[0]/in_shp_fv[0]
 K1 = inshp_v[1]/in_shp_fv[1]
 
