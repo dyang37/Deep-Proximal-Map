@@ -47,17 +47,18 @@ def constructGGt(h,K,rows,cols):
 
 # 2D gaussian mask - should give the same result as MATLAB's fspecial('gaussian',[shape],[sigma])   
 def gauss2D(shape=(3,3),sigma=0.5):
+  print('------- Using gaussian filter as forward model -------')
   m,n = [(ss-1.)/2. for ss in shape]
   y,x = np.ogrid[-m:m+1,-n:n+1]
   h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
   h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
   sumh = h.sum()
-  print('sumh=',sumh)
   if sumh != 0:
     h /= sumh
   return h
 
 def windowed_sinc(K):
+  print('------- Using sinc filter as forward model -------')
   p = 8*K+1
   n = np.arange(p)
   hsinc = np.sinc((n - (p - 1) / 2.)/K)/K
@@ -71,6 +72,7 @@ def windowed_sinc(K):
   return h
 
 def avg_filt(p):
+  print('------- Using avg filter as forward model -------')
   h=np.ones((p,p))
   h=h/np.sum(h[:])
   return h
