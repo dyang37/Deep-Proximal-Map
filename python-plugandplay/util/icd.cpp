@@ -77,8 +77,6 @@ std::vector< std::vector<double> > icd::update(std::vector< std::vector<double> 
 
 
 double icd::apply_h(int i, int j, int rows, int cols, std::vector< std::vector<double> >& x){
-  if ( (i >= rows) || (j >= cols))
-    throw std::runtime_error("index of pixel out of range");
   double retval = 0;
   for (int di = -h_rows/2; di <= h_rows/2; di++){
     for (int dj = -h_cols/2; dj <= h_cols/2; dj++){
