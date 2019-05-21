@@ -7,6 +7,7 @@ from skimage.measure import compare_psnr
 from sr_util import gauss2D, windowed_sinc, avg_filt
 from construct_forward_model import construct_forward_model
 from icd_simulation import icd_simulation
+from cnn_exp import cnn_exp
 import matplotlib.pyplot as plt
 import scipy.io as io
 
@@ -24,8 +25,8 @@ print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
 
 ################### hyperparameters
 K = 4 # downsampling factor
-sigw = 30./255. # noise level
-siglam = 30./255.
+sigw = 60./255. # noise level
+siglam = 60./255.
 
 lambd = 1./(siglam*siglam)
 
@@ -64,10 +65,10 @@ h = windowed_sinc(K)
 filt_choice = 'sinc'
 print("filter choice: ",filt_choice)
 # y = Gz. We deliberately make awgn=0 for the purpose of experiments
-y = construct_forward_model(z, K, h, 0)
+y = construct_forward_model(z, K, h, sigw)
   # save image
-figname = str(K)+'_SR_noisy_input_'+filt_choice+'.png'
+figname = 'denoise_input_'+filt_choice+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
   ################## Plug and play ADMM iterative reconstruction
-icd_simulation(z,y,h,sigw,lambd,K,filt_choice)
+cnn_exp(z,y,h,sigw,lambd,K,filt_choice)

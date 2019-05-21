@@ -27,21 +27,18 @@ def icd_simulation(z,y,h,sigw,lambd,K,filt_choice):
   icd_cpp = Pyicd(y,h,K,lambd,sigw);
   # read pre-trained model for pseudo-proximal map
   model_dir=os.path.join(os.getcwd(),'cnn')
-  model_name = "model_sinc_sig60"
+  model_name = "model_sinc_sig60_realim_resnet"
   json_file = open(os.path.join(model_dir, model_name+'.json'), 'r')
   loaded_model_json = json_file.read()
   json_file.close()
   model = model_from_json(loaded_model_json)
   # load weights into new model
   model.load_weights(os.path.join(model_dir,model_name+'.h5'))
-  # use GGMRF as prior 
-  np.random.seed(2019)
   # iterative reconstruction
   v_icd = np.zeros((rows_hr,cols_hr))
   v_fft = copy.deepcopy(v_icd)
   v_cnn = copy.deepcopy(v_icd)
   #v=z
-  #Gx_cnn = construct_forward_model(x_cnn,K,h,0)
   print('itr      cost')
   forward_cost = []
   fft_cost = []
@@ -67,7 +64,7 @@ def icd_simulation(z,y,h,sigw,lambd,K,filt_choice):
     v_cnn = copy.deepcopy(x_cnn)
     imsave('simulation_icd_itr'+str(itr)+'.png', np.clip(v_icd,0,1))
     imsave('simulation_fft_itr'+str(itr)+'.png', np.clip(v_fft,0,1))
-    imsave('simulation_cnn_itr'+str(itr)+'.png', np.clip(v_cnn,0,1))
+    imsave('simulation_cnn_itr'+str(itr)+model_name+'.png', np.clip(v_cnn,0,1))
   # end ADMM recursive update
   plt.figure()
   plt.plot(list(range(forward_cost.__len__()))[5:],forward_cost[5:],label='ICD')  
@@ -76,15 +73,15 @@ def icd_simulation(z,y,h,sigw,lambd,K,filt_choice):
   plt.xlabel('iteration')
   plt.ylabel('proximal map cost')
   plt.legend()
-  plt.savefig('proximal_map_cost_'+filt_choice+'.png')
+  plt.savefig('proximal_map_cost_'+model_name+filt_choice+'.png')
   err_img_icd = np.abs(x_icd-z)
   err_img_fft = np.abs(x_fft-z)
   err_img_cnn = np.abs(x_cnn-z)
   imsave('simulation_output_icd_'+filt_choice+'.png',np.clip(x_icd,0,1))
   imsave('simulation_output_fft_'+filt_choice+'.png',np.clip(x_fft,0,1))
-  imsave('simulation_output_cnn_'+filt_choice+'.png',np.clip(x_cnn,0,1))
+  imsave('simulation_output_cnn_'+model_name+'.png',np.clip(x_cnn,0,1))
   imsave('err_img_icd_'+filt_choice+'.png',np.clip(err_img_icd,0,1))
   imsave('err_img_fft_'+filt_choice+'.png',np.clip(err_img_fft,0,1))
-  imsave('err_img_cnn_'+filt_choice+'.png',np.clip(err_img_cnn,0,1))
+  imsave('err_img_cnn_'+model_name+'.png',np.clip(err_img_cnn,0,1))
   return
 
