@@ -48,7 +48,7 @@ fv=[]
 
 n_samples = 0
 
-for filename in glob.glob('/home/yang1467/my_plug_and_play/python-plugandplay/cnn/dataset/pmap/*/*.jpg'):
+for filename in glob.glob('/root/datasets/pmap/*/*.jpg'):
   #print(filename)
   n_samples += 1
   x_in = np.array(imread(filename), dtype=np.float32) / 255.0
@@ -58,6 +58,11 @@ for filename in glob.glob('/home/yang1467/my_plug_and_play/python-plugandplay/cn
   v.append(v_img)
   y.append(construct_forward_model(x_img, K, h, sigw))
   fv.append(construct_forward_model(v_img, K, h, 0))
+
+x = np.array(x)
+v = np.array(v)
+y = np.array(y)
+fv = np.array(fv)
 
 # Random Shuffle and training/test set selection
 np.random.seed(2019)
@@ -83,13 +88,13 @@ K1 = inshp_v[1]/in_shp_fv[1]
 print('fv training data shape: ',np.shape(fv_train))
 print('y training data shape: ',np.shape(y_train))
 
-def residual_stack(x, n_chann=32):
+def residual_stack(x, n_chann=8):
   def residual_unit(y,_strides=1):
     shortcut_unit=y
     # 1x1 conv linear
     y = layers.Conv2D(n_chann, (5,5),strides=_strides,padding='same',activation='relu')(y)
     y = layers.BatchNormalization()(y)
-    y = layers.Conv1D(n_chann, (5,5),strides=_strides,padding='same',activation='linear')(y)
+    y = layers.Conv2D(n_chann, (5,5),strides=_strides,padding='same',activation='linear')(y)
     y = layers.BatchNormalization()(y)
     # add batch normalization
     y = layers.add([shortcut_unit,y])
@@ -113,7 +118,7 @@ v_tf = layers.Reshape(inshp_v+(1,))(input_v)
 
 fv_y=layers.Subtract()([y_tf,fv_tf])
 
-n_channels = 32
+n_channels = 8
 fv_y=layers.Conv2D(n_channels,(5,5),activation='relu',padding='same')(fv_y)
 v_ = layers.Conv2D(n_channels,(5,5),activation='relu',padding='same')(v_tf)
 while (K0 > 1) or (K1 > 1):
@@ -131,12 +136,12 @@ print("Reshaped layer shape is: ",H_merge._keras_shape)
 n_channels *= 2
 while n_channels >=2 :
   n_channels /= 2
-  H_merge = residual_stack(H_merge, n_chann=n_channels)
+  H_merge = residual_stack(H_merge, n_chann=int(n_channels))
 print("H_merge layer shape is: ",H_merge._keras_shape)
 H_out = layers.Conv2D(1,(3,3),activation='sigmoid',padding='same')(H_merge)
 H_out = layers.Reshape((rows_hr,cols_hr))(H_out)
 model = models.Model(inputs=[input_fv,input_y,input_v],output=[H_out])
-#model = multi_gpu_model(model, gpus=3)
+model = multi_gpu_model(model, gpus=3)
 model.summary()
 
 
