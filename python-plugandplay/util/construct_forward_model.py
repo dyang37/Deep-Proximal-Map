@@ -12,7 +12,7 @@ def construct_forward_model(z, K, h, sigw):
   y = y[::K,::K] # downsample z by taking every Kth pixel
   np.random.seed(0)
   gauss = np.random.normal(0,1,np.shape(y))
-  y = np.clip(y+sigw*gauss,0,1)
+  y = y+sigw*gauss
   return y
  
 

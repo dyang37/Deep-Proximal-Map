@@ -1,4 +1,4 @@
-import os,sys
+import os,sys,glob
 sys.path.append(os.path.join(os.getcwd(), "../util"))
 import numpy as np
 from keras import layers, models
@@ -14,11 +14,11 @@ config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
 
-K=4
+K = 4
 _train = True
 print('training switch: ',_train)
 forward_name = 'sinc'
-model_name = 'model_'+forward_name+'_noisy_simple_hr'
+model_name = 'model_'+forward_name+'_noisy_resnet_hr'
 dict_name = '/root/datasets/pmap_exp_'+forward_name+'_hr.dat'
 dataset = pickle.load(open(dict_name,"rb"))
 epsil = dataset['epsil']
@@ -28,7 +28,7 @@ n_samples = np.shape(epsil)[0]
 print('total number of samples: ',n_samples)
 # Random Shuffle and training/test set selection
 np.random.seed(2019)
-n_train = 800
+n_train = n_samples*8//10
 train_idx = np.random.choice(range(0,n_samples), size=n_train, replace=False)
 test_idx = list(set(range(0,n_samples))-set(train_idx))
 epsil_train = epsil[train_idx]
@@ -42,6 +42,24 @@ in_shp_yfv = np.shape(yfv_train)[1:]
 
 print('fv-y training data shape: ',np.shape(yfv_train))
 
+def residual_stack(x, n_chann=8):
+  def residual_unit(y,_strides=1):
+    shortcut_unit=y
+    # 1x1 conv linear
+    y = layers.Conv2D(n_chann, (3,3),strides=_strides,padding='same',activation='linear')(y)
+    y = layers.Conv2D(n_chann, (3,3),strides=_strides,padding='same',activation='linear')(y)
+    y = layers.BatchNormalization()(y)
+    # add batch normalization
+    y = layers.add([shortcut_unit,y])
+    return y
+
+  x = layers.Conv2D(n_chann, (1,1), padding='same',activation='linear')(x)
+  x = residual_unit(x)
+  x = residual_unit(x)
+  # maxpool for down sampling
+  return x
+
+
 ### construct neural network graph
 input_yfv = layers.Input(shape=(rows_hr//K,cols_hr//K))
 yfv_in = layers.Reshape(in_shp_yfv+(1,))(input_yfv)
@@ -50,11 +68,11 @@ n_channels = 16
 y_fv_in = layers.Conv2D(n_channels,(3,3),activation='linear',padding='same')(yfv_in)
 k = K
 while (k > 1):
-  y_fv_in = layers.Conv2D(n_channels,(3,3),activation='linear',padding='same')(y_fv_in)
+  y_fv_in = residual_stack(y_fv_in, n_chann=n_channels)
   y_fv_in=layers.UpSampling2D((2,2))(y_fv_in)
   k /= 2
 
-H = layers.Conv2D(n_channels, (3,3), padding='same',activation='linear')(y_fv_in)
+H = residual_stack(y_fv_in, n_chann=n_channels)
 H = layers.Conv2D(1, (3,3), padding='same',activation='linear')(H)
 H_out = layers.Reshape((rows_hr,cols_hr))(H)
 model = models.Model(inputs=input_yfv,output=H_out)

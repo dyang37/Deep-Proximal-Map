@@ -45,7 +45,7 @@ def icd_update(x,xtilde,y,h,K,lambd,sigw):
       # update error image
       e += alpha*Gs
   sess.close()
-  return x.clip(min=0, max=1)
+  return x
 
 def norm_Gs(i,j,h,rows_hr, cols_hr, K):
   [h_row, h_col] = np.shape(h)

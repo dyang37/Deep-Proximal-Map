@@ -7,6 +7,7 @@ from skimage.measure import compare_psnr
 from sr_util import gauss2D, windowed_sinc, avg_filt
 from construct_forward_model import construct_forward_model
 from icd_simulation import deep_proximal_map_exp
+from ml_estim import ml_estimate 
 import matplotlib.pyplot as plt
 import scipy.io as io
 
@@ -68,4 +69,4 @@ figname = str(K)+'_SR_noisy_input_'+filt_choice+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
   ################## Plug and play ADMM iterative reconstruction
-deep_proximal_map_exp(y,h,sigk,sig,K)
+ml_estimate(y,h,sigk,sig,K)

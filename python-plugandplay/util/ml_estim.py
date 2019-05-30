@@ -18,7 +18,7 @@ from forward_model_optim import forward_model_optim
 from dncnn import pseudo_prox_map
 from keras.models import model_from_json
 
-def deep_proximal_map_exp(y,h,sigk,sig,K):
+def ml_estimate(y,h,sigk,sig,K):
   [rows_lr, cols_lr] = np.shape(y)
   rows_hr = rows_lr*K
   cols_hr = cols_lr*K
@@ -36,18 +36,22 @@ def deep_proximal_map_exp(y,h,sigk,sig,K):
   # load weights into new model
   model.load_weights(os.path.join(model_dir,model_name+'.h5'))
   # iterative reconstruction
-  v = np.zeros((rows_hr,cols_hr))
+  v_icd = np.zeros((rows_hr,cols_hr))
+  v_cnn = copy.deepcopy(v_icd) 
   F_y = np.random.rand(rows_hr, cols_hr)
-  # ICD iterative update
-  for icd_itr in range(10):
-    F_y = np.array(icd_cpp.update(F_y, v))
-  
-  Hy = pseudo_prox_map(y, model)
-  print('shape of deep proximal map output:',np.shape(Hy))
+  for itr in range(20):
+    # ICD iterative update
+    x_icd = np.random.rand(rows_hr,cols_hr)
+    for icd_itr in range(10):
+      x_icd = np.array(icd_cpp.update(x_icd, v_icd))
+    v_icd = x_icd
+    fv = construct_forward_model(v_cnn, K, h, 0)
+    H = pseudo_prox_map(np.subtract(y,fv), model)
+    v_cnn = np.add(v_icd, H)
   # check if H(y) = F_y(0)
-  mse = ((F_y-Hy)**2).mean(axis=None)
+  mse = ((v_icd-v_cnn)**2).mean(axis=None)
   print('pixelwise mse value: ',mse)
-  err_img = np.subtract(F_y,Hy) + 0.5
+  err_img = np.subtract(v_icd,v_cnn) + 0.5
   imsave('diff_exp.png',np.clip(err_img,0,1))
   imsave('Hy.png',np.clip(Hy,0,1))
   imsave('F_y0.png',np.clip(F_y,0,1))
