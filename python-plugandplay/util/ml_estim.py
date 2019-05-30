@@ -39,6 +39,8 @@ def ml_estimate(y,h,sigk,sig,K):
   v_icd = np.zeros((rows_hr,cols_hr))
   v_cnn = copy.deepcopy(v_icd) 
   F_y = np.random.rand(rows_hr, cols_hr)
+  ml_cost_cnn = []
+  ml_cost_icd = []
   for itr in range(20):
     # ICD iterative update
     x_icd = np.random.rand(rows_hr,cols_hr)
@@ -48,11 +50,30 @@ def ml_estimate(y,h,sigk,sig,K):
     fv = construct_forward_model(v_cnn, K, h, 0)
     H = pseudo_prox_map(np.subtract(y,fv), model)
     v_cnn = np.add(v_icd, H)
+    y_icd = construct_forward_model(v_icd, K, h, 0)
+    y_cnn = construct_forward_model(v_cnn, K, h, 0)
+    ml_cost_cnn.append(((y-y_cnn)**2).mean(axis=None))
+    ml_cost_icd.append(((y-y_icd)**2).mean(axis=None))
   # check if H(y) = F_y(0)
   mse = ((v_icd-v_cnn)**2).mean(axis=None)
+  mse_y_gd = ((y-y_cnn)**2).mean(axis=None)
+  mse_y = ((y_icd-y_cnn)**2).mean(axis=None)
   print('pixelwise mse value: ',mse)
+  print('pixelwise mse value for y between cnn and groundtruth: ',mse_y_gd)
+  print('pixelwise mse value for y between cnn and icd: ',mse_y)
+  
+  # cost function plot
+  plt.plot(list(range(ml_cost_cnn.__len__())),ml_cost_cnn,label="deep prox map")
+  plt.plot(list(range(ml_cost_icd.__len__())),ml_cost_icd,label="icd")
+  plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+  plt.xlabel('iteration')
+  plt.ylabel('ML cost $||Y-Ax||^2$')
+  
   err_img = np.subtract(v_icd,v_cnn) + 0.5
+  err_y = np.subtract(y,y_cnn) + 0.5
+  # save output images
   imsave('diff_exp.png',np.clip(err_img,0,1))
+  imsave('diff_y.png',np.clip(err_y,0,1))
   imsave('Hy.png',np.clip(Hy,0,1))
   imsave('F_y0.png',np.clip(F_y,0,1))
   return
