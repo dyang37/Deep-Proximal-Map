@@ -25,7 +25,7 @@ print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
 
 ################### hyperparameters
 K = 4 # downsampling factor
-sigk = 0.05
+sigw = 0.05
 sig = 0.2
 
 print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
@@ -63,10 +63,10 @@ h = windowed_sinc(K)
 filt_choice = 'sinc'
 print("filter choice: ",filt_choice)
 # y = Gz. We deliberately make awgn=0 for the purpose of experiments
-y = construct_forward_model(z, K, h, 0)
+y = construct_forward_model(z, K, h, sigw)
   # save image
 figname = str(K)+'_SR_noisy_input_'+filt_choice+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
   ################## Plug and play ADMM iterative reconstruction
-ml_estimate(y,h,sigk,sig,K)
+ml_estimate(y,h,sigw,sig,K)

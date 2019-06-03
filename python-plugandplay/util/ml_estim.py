@@ -19,6 +19,7 @@ from dncnn import pseudo_prox_map
 from keras.models import model_from_json
 
 def ml_estimate(y,h,sigk,sig,K):
+  output_dir = os.path.join(os.getcwd(),'./output/noisy/')
   [rows_lr, cols_lr] = np.shape(y)
   rows_hr = rows_lr*K
   cols_hr = cols_lr*K
@@ -41,7 +42,8 @@ def ml_estimate(y,h,sigk,sig,K):
   F_y = np.random.rand(rows_hr, cols_hr)
   ml_cost_cnn = []
   ml_cost_icd = []
-  for itr in range(20):
+  for itr in range(10):
+    print('iteration ',itr)
     # ICD iterative update
     x_icd = np.random.rand(rows_hr,cols_hr)
     for icd_itr in range(10):
@@ -50,6 +52,8 @@ def ml_estimate(y,h,sigk,sig,K):
     fv = construct_forward_model(v_cnn, K, h, 0)
     H = pseudo_prox_map(np.subtract(y,fv), model)
     v_cnn = np.add(v_icd, H)
+    imsave(os.path.join(output_dir,'ml_output_cnn_itr'+str(itr)+'.png'), np.clip(v_cnn,0,1))
+    imsave(os.path.join(output_dir,'ml_output_icd_itr'+str(itr)+'.png'), np.clip(v_icd,0,1))
     y_icd = construct_forward_model(v_icd, K, h, 0)
     y_cnn = construct_forward_model(v_cnn, K, h, 0)
     ml_cost_cnn.append(((y-y_cnn)**2).mean(axis=None))
@@ -68,13 +72,16 @@ def ml_estimate(y,h,sigk,sig,K):
   plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
   plt.xlabel('iteration')
   plt.ylabel('ML cost $||Y-Ax||^2$')
-  
+  plt.savefig('ml_cost.png')  
   err_img = np.subtract(v_icd,v_cnn) + 0.5
   err_y = np.subtract(y,y_cnn) + 0.5
   # save output images
-  imsave('diff_exp.png',np.clip(err_img,0,1))
-  imsave('diff_y.png',np.clip(err_y,0,1))
-  imsave('Hy.png',np.clip(Hy,0,1))
-  imsave('F_y0.png',np.clip(F_y,0,1))
+  imsave(os.path.join(output_dir,'diff_exp.png'), np.clip(err_img,0,1))
+  imsave(os.path.join(output_dir,'diff_y.png'), np.clip(err_y,0,1))
+  imsave(os.path.join(output_dir,'ml_output_cnn.png'), np.clip(v_cnn,0,1))
+  imsave(os.path.join(output_dir,'ml_output_icd.png'), np.clip(v_icd,0,1))
+  imsave(os.path.join(output_dir,'forward_modeled_cnn.png'), np.clip(y_cnn,0,1))
+  imsave(os.path.join(output_dir,'forward_modeled_icd.png'), np.clip(y_icd,0,1))
+  print("Done.")
   return
 

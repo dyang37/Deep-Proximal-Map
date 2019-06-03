@@ -19,7 +19,7 @@ _train = True
 print('training switch: ',_train)
 forward_name = 'sinc'
 model_name = 'model_'+forward_name+'_noisy_simple_hr'
-dict_name = '/root/datasets/pmap_exp_'+forward_name+'_hr.dat'
+dict_name = '/home/yang1467/datasets/pmap_exp_'+forward_name+'_hr.dat'
 dataset = pickle.load(open(dict_name,"rb"))
 epsil = dataset['epsil']
 y_fv=dataset['y_fv']
@@ -58,7 +58,7 @@ H = layers.Conv2D(n_channels, (3,3), padding='same',activation='linear')(y_fv_in
 H = layers.Conv2D(1, (3,3), padding='same',activation='linear')(H)
 H_out = layers.Reshape((rows_hr,cols_hr))(H)
 model = models.Model(inputs=input_yfv,output=H_out)
-model = multi_gpu_model(model, gpus=3)
+#model = multi_gpu_model(model, gpus=3)
 model.summary()
 
 
