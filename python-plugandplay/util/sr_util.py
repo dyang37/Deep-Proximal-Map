@@ -45,9 +45,22 @@ def constructGGt(h,K,rows,cols):
   GGt = np.abs(fft2(g,[rows//K,cols//K]))
   return GGt
 
-# 2D gaussian mask - should give the same result as MATLAB's fspecial('gaussian',[shape],[sigma])   
-def gauss2D(shape=(3,3),sigma=0.5):
-  print('------- Using gaussian filter as forward model -------')
+# 2d gaussian mask filtered by a hamming window
+def gauss2D(shape=(15,15),sigma=0.5):
+  m,n = [(ss-1.)/2. for ss in shape]
+  y,x = np.ogrid[-m:m+1,-n:n+1]
+  h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
+  h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
+  w_0 = np.hamming(shape[0])
+  w_1 = np.hamming(shape[1])
+  w = w_0*w_1
+  h = np.multiply(h,w)
+  sumh = h.sum()
+  if sumh != 0:
+    h /= sumh
+  return h
+
+def gauss2D_nowindow(shape=(15,15),sigma=0.5):
   m,n = [(ss-1.)/2. for ss in shape]
   y,x = np.ogrid[-m:m+1,-n:n+1]
   h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
@@ -76,3 +89,4 @@ def avg_filt(p):
   h=np.ones((p,p))
   h=h/np.sum(h[:])
   return h
+

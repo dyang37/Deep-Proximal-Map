@@ -6,28 +6,24 @@ from math import sqrt
 from skimage.measure import compare_psnr
 from sr_util import gauss2D, windowed_sinc, avg_filt
 from construct_forward_model import construct_forward_model
-from icd_simulation import icd_simulation
+from plug_and_play_reconstruction import plug_and_play_reconstruction
 import matplotlib.pyplot as plt
 import scipy.io as io
 
 ################## parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-p', action='store', dest='denoiser', help='Denoiser choice. 0: DnCNN; 1: TV; 2: nlm',type=int, default=0)
 parser.add_argument('-f', action='store', dest='optim', help='proximal map update choce. 0: fourier decomposition; 1: ICD',type=int, default=1)
 args = parser.parse_args()
-denoiser = args.denoiser
 optim_method = args.optim #0: Stanley's closed form solution 1: icd update
-denoiser_dict = {0:"DnCNN",1:"Total Variation",2:"Non-local Mean"}
-optim_dict = {0:"fft closed form approximation", 1:"icd update"}
-print("Using ",denoiser_dict[denoiser],"as denoiser for prior model...")
+optim_dict = {0:"deep proximal map", 1:"icd update"}
 
 
 ################### hyperparameters
 K = 4 # downsampling factor
-sigw = 60./255. # noise level
-siglam = 60./255.
+sigw = 0.05 # noise level
+sig = 0.2
 
-lambd = 1./(siglam*siglam)
+lambd = 1./(sig*sig)
 
 print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
 ################### Data Proe-processing
@@ -64,10 +60,10 @@ h = windowed_sinc(K)
 filt_choice = 'sinc'
 print("filter choice: ",filt_choice)
 # y = Gz. We deliberately make awgn=0 for the purpose of experiments
-y = construct_forward_model(z, K, h, 0)
+y = construct_forward_model(z, K, h, sigw)
   # save image
 figname = str(K)+'_SR_noisy_input_'+filt_choice+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
-  ################## Plug and play ADMM iterative reconstruction
-icd_simulation(z,y,h,sigw,lambd,K,filt_choice)
+################## Plug and play ADMM iterative reconstruction
+x = plug_and_play_reconstruction(z,y,h,sigw,lambd,K,optim_method, filt_choice)

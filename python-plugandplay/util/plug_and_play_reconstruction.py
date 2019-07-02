@@ -1,22 +1,18 @@
 import numpy as np
 import sys
 import os
-from math import sqrt
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 sys.path.append(os.path.join(os.getcwd(), "./denoisers/DnCNN"))
 from skimage.io import imsave
 from keras.models import  model_from_json
-from scipy.misc import imresize
-from dncnn import cnn_denoiser
-from skimage.restoration import denoise_tv_chambolle as denoiser_tv
-from skimage.restoration import denoise_nl_means
+import copy
+from dncnn import cnn_denoiser, pseudo_prox_map
 from forward_model_optim import forward_model_optim
 from construct_forward_model import construct_forward_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from icdwrapper import Pyicd
-import timeit
 
 # This function performs ADMM iterative reconstruction for image super resolution problem
 # hr_img: ground_truth image. Only used for evaluation purpose
@@ -31,26 +27,37 @@ import timeit
 # return value: x, the reconstructed high resolution image
 
 
-def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,denoiser, optim_method):
-  denoiser_dict = {0:"DnCNN",1:"Total Variation",2:"Non-local Mean"}
-  if denoiser == 0:
-    # you can replace model.json file and model.h5 file with any other pre-trained neural network
-    model_dir=os.path.join('models',os.getcwd(),'./denoisers/DnCNN')
-    # load json and create model
-    json_file = open(os.path.join(model_dir,'model.json'), 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    model = model_from_json(loaded_model_json)
-    # load weights into new model
-    model.load_weights(os.path.join(model_dir,'model.h5'))
-
+def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,K,optim_method,filt_choice):
+  # load pre-trained denoiser model
+  if optim_method == 0:
+    output_dir = os.path.join(os.getcwd(),'./pnp_output/pmap/')
+  else:
+    output_dir = os.path.join(os.getcwd(),'./pnp_output/icd/')
+  denoiser_dir=os.path.join(os.getcwd(),'./denoisers/DnCNN')
+  json_file = open(os.path.join(denoiser_dir,'model.json'), 'r')
+  loaded_model_json = json_file.read()
+  json_file.close()
+  denoiser_model = model_from_json(loaded_model_json)
+  denoiser_model.load_weights(os.path.join(denoiser_dir,'model.h5'))
+  
+  # load pre-trained deep proximal map model
+  pmap_dir=os.path.join(os.getcwd(),'cnn')
+  pmap_model_name = "model_sinc_noisy_simple_hr"
+  json_file = open(os.path.join(pmap_dir, pmap_model_name+'.json'), 'r')
+  loaded_model_json = json_file.read()
+  json_file.close()
+  pmap_model = model_from_json(loaded_model_json)
+  pmap_model.load_weights(os.path.join(pmap_dir,pmap_model_name+'.h5'))
+  
+  # initialize cpp wrapper for icd
+  icd_wrapper = Pyicd(y,h,K,lambd,sigw);
+  
+  
   [rows_lr, cols_lr] = np.shape(y)
   rows_hr = rows_lr*K
   cols_hr = cols_lr*K
-  N = rows_hr*cols_hr
-  # initialize cpp wrapper for icd
-  icd_cpp = Pyicd(y,h,K,lambd,sigw);
-  # use GGMRF as prior 
+  
+  # plug and play cost function
   g = np.array([[1/12,1/6,1/12],[1/6,0,1/6],[1/12,1/6,1/12]])
   p = 2 #### power param for GGMRF
   # estimate sigx
@@ -61,108 +68,75 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,beta,lambd,gamma,max_itr,K,deno
         for dj in range(-1,2):
           if(i+di>=0 and i+di<rows_hr and j+dj>=0 and j+dj<cols_hr):
             sigx += g[di+1,dj+1] * abs(hr_img[i,j]-hr_img[i+di,j+dj])**p
-  # divide by 2 because we counted each clique twice
+            # divide by 2 because we counted each clique twice
   sigx /= 2.
-  sigx = (sigx/N)**(1/p)
+  sigx = (sigx/(rows_hr*cols_hr))**(1/p)
   print('estimated GGMRF sigma = ',sigx)
-  #v = imresize(y, [rows_hr, cols_hr])/255.
+
+  x = np.random.rand(rows_hr, cols_hr)
   v = np.random.rand(rows_hr, cols_hr)
-  figname = str(K)+'_SR_baseline_'+denoiser_dict[denoiser]+'.png' 
-  imsave(figname, v)
-  x = v
   u = np.zeros((rows_hr, cols_hr))
-  residual = float("inf")
-  mse_min = float("inf")
-  # hyperparameters
-  tol = 10**-5
-  patience = 10
   # iterative reconstruction
-  print('itr      residual          mean-sqr-error')
-  itr = 0
-  forward_cost = []
-  cost = []
-  while((residual > tol) or (fluctuate <= patience)) and (itr < max_itr):
-    v_old = v
-    u_old = u
-    x_old = x
-    xtilde = v-u
-    # forward model optimization step
-    x = optimization_wrapper(icd_cpp,x,xtilde,y,h,K,lambd,sigw,itr,optim_method)
+  admm_cost = []
+  residual_x = []
+  residual_v = []
+  for itr in range(20):
+    # forward step
+    x_old = copy.deepcopy(x)
+    v_old = copy.deepcopy(v)
+    vtilde = np.subtract(x,u)
+    v = optimization_wrapper(v,vtilde,y,h,K,itr,optim_method, pmap_model, icd_wrapper)
     # denoising step
-    vtilde = x + u
-    vtilde = vtilde.clip(min=0,max=1)
-    sigma = sqrt(beta/lambd)
-    if denoiser == 0:
-      v = cnn_denoiser(vtilde, model)
-    elif denoiser == 1:
-      v = denoiser_tv(vtilde)
-    elif denoiser == 2:
-      v = denoise_nl_means(vtilde, sigma=sigma)
-    else:
-      raise Exception('Error: unknown denoiser.')
+    xtilde = np.add(v,u)
+    x = cnn_denoiser(xtilde, denoiser_model)
     # update u
-    u = u+(x-v)
-    # calculate current cost
+    u = u+(v-x)
+    imsave(os.path.join(output_dir,'pnp_output_itr_'+str(itr)+'.png'),x) 
+    
+    # calculate admm cost
     Gx = construct_forward_model(x,K,h,0)
-    forward_cost.append(sum(sum((Gx-y)**2))/(2*sigw*sigw) + sum(sum((x-xtilde)**2))*lambd/2)
     ggmrf_sum = 0
     for i in range(rows_hr):
       for j in range(cols_hr):
         for di in range(-1,2):
           for dj in range(-1,2):
-            ggmrf_sum += g[di+1,dj+1] * abs(v[i,j]-v[(i+di)%rows_hr,(j+dj)%cols_hr])**p
+            ggmrf_sum += g[di+1,dj+1] * abs(x[i,j]-x[(i+di)%rows_hr,(j+dj)%cols_hr])**p
     # divide by 2 because we counted each clique twice
     ggmrf_sum /= 2.
     cost_prior = ggmrf_sum/(p*sigx**p)
- 
-    cost.append(sum(sum((Gx-y)**2))/(2*sigw*sigw) + beta*cost_prior + (sum(sum((x-v+u)**2)) - sum(sum(u**2)))*lambd/2)
-    # update lambd
-    lambd = lambd*gamma
-    # calculate residual
-    residualx = (1/sqrt(N))*(sqrt(sum(sum((x-x_old)**2))))
-    residualv = (1/sqrt(N))*(sqrt(sum(sum((v-v_old)**2))))
-    residualu = (1/sqrt(N))*(sqrt(sum(sum((u-u_old)**2))))
-    residual = residualx + residualv + residualu
-    # calculate mse
-    mse = (1/sqrt(N))*(sqrt(sum(sum((x-hr_img)**2))))
-    if (mse < mse_min):
-      fluctuate = 0
-      mse_min = mse
-    else:
-      fluctuate += 1
-    print(itr,' ',residual,'  ', mse)
-    if itr % 5 == 0:
-      figname = str(K)+'_SR_method'+str(optim_method)+'_itr'+str(itr)+'.png'
-      imsave(figname, np.clip(x,0,1))
-    itr = itr + 1
+    admm_cost.append(sum(sum((Gx-y)**2))/(2*sigw*sigw) + cost_prior)
+    residual_x.append(((x-x_old)**2).mean(axis=None)) 
+    residual_v.append(((v-v_old)**2).mean(axis=None)) 
   # end ADMM recursive update
-  plt.plot(list(range(forward_cost.__len__())),forward_cost)
-  plt.xlabel('iteration')
-  plt.ylabel('forward model cost')
-  plt.savefig('forward_cost_method'+str(optim_method)+'.png')
   plt.figure()
-  plt.plot(list(range(cost.__len__())),cost)
-  plt.xlabel('iteration')
-  plt.ylabel('ADMM cost')
-  plt.savefig('admm_cost_method'+str(optim_method)+'.png')
+  plt.plot(list(range(admm_cost.__len__())), admm_cost)
+  plt.xlabel('itr')
+  plt.ylabel('admm cost')
+  plt.savefig(os.path.join(output_dir,'admm_cost.png')) 
+  plt.figure()
+  plt.plot(list(range(residual_x.__len__())), residual_x, label="$\dfrac{1}{N}||x^{n+1}-x^n||^2$")
+  plt.plot(list(range(residual_v.__len__())), residual_v, label="$\dfrac{1}{N}||v^{n+1}-v^n||^2$")
+  plt.legend(loc='upper right')
+  plt.xlabel('itr')
+  plt.ylabel('residual')
+  plt.savefig(os.path.join(output_dir,'residual.png')) 
+
+  figout = 'pnp_output_'+filt_choice+'.png'
+  imsave(os.path.join(output_dir,figout),x)
   return x
 
 
-def optimization_wrapper(icd_cpp,x,xtilde,y,h,K,lambd,sigw,itr,optim_method):
+def optimization_wrapper(v,vtilde,y,h,K,itr,optim_method, pmap_model, icd_wrapper):
   if optim_method == 0:
-    x = forward_model_optim(x,xtilde,y,h,K, lambd, sigw)
+    fvtilde = construct_forward_model(vtilde,K,h,0)
+    H = pseudo_prox_map(np.subtract(y,fvtilde),pmap_model)
+    v = np.add(vtilde, H)
   elif optim_method == 1:
     if itr == 0:
       for _ in range(10):
-        tic=timeit.default_timer()
-        x = icd_cpp.update(x,xtilde)
-        toc=timeit.default_timer()
-        print('icd time elapsed: ',toc-tic)
+        v = icd_wrapper.update(v,vtilde)
     else:
-      tic=timeit.default_timer()
-      x = icd_cpp.update(x,xtilde)
-      toc=timeit.default_timer()
-      print('icd time elapsed: ',toc-tic)
+      v = icd_wrapper.update(v,vtilde)
   else:
     raise Exception('Error: unknown optimization method.')
-  return np.array(x)
+  return np.array(v)

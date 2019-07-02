@@ -69,4 +69,4 @@ figname = str(K)+'_SR_noisy_input_'+filt_choice+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
   ################## Plug and play ADMM iterative reconstruction
-ml_estimate(y,h,sigw,sig,K)
+ml_estimate(y,h,sigw,sig,K,filt_choice)

@@ -41,9 +41,14 @@ def cnn_denoiser(noisy_img, model):
     x_=from_tensor(x_)
     return x_
         
-def pseudo_prox_map(fv_y, model):
-  fv_y = fv_y.reshape((1,)+fv_y.shape)
-  H = model.predict(fv_y) # inference
+def pseudo_prox_map(y_fv, model):
+  y_fv = y_fv.reshape((1,)+y_fv.shape)
+  H = model.predict(y_fv) # inference
   return H[0]
 
+def pseudo_prox_map_nonlinear(y_fv, v, model):
+  y_fv = y_fv.reshape((1,)+y_fv.shape)
+  v = v.reshape((1,)+v.shape)
+  H = model.predict([y_fv,v]) # inference
+  return H[0]
 
