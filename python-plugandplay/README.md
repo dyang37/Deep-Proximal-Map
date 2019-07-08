@@ -1,16 +1,19 @@
-# Python Plug-and-play Package for Image Processing
+# Deep Proximal Map For Inverse Image Problems
 
 Diyu Yang and Prof. Charles A. Bouman
+
 Purdue University, School of Electrical and Computer Engineering
 ## Overview
-This python package implements image inpainting and super-resolution with different choices of prior models. For more details please refer to pnp_super_resol.pptx. 
+This python package implements deep proximal map model and related experiments (ML estimation, Plug and play reconstruction) for various inverse imaging problems.
+
+Note that this repo does NOT include original training data for deep proximal map. If you would like to retrain the model please download the training dataset [HERE](https://data.vision.ee.ethz.ch/cvl/DIV2K/).
 
 ## Prerequisite
 Python 3.6
 
 Keras 2.2.4
 
-Tensorflow 1.12.0 (GPU support is not necessary)
+Tensorflow 1.12.0 (GPU support is only necessary if you want to retrain the deep proximal map models)
 
 scikit-image
 
@@ -18,49 +21,121 @@ matplotlib
 
 Cython
 
-## Running the demos:
-1. Move to Plugandplay-python directory
+## Quick Start
+1. Run ./Cython_setup.sh to compile C++ class for ICD optimization.
+2. Go to /experiments directory
+3. Run experiments:
+* #### nonlinear case Pseudo-ML estimation: 
+  
+  python ml_exp_nonlinear.py. Output will be in python-plugandplay/results/ml_output_nonlinear/ directory
+  
+* #### nonlinear case plug-and-play reconstruction: 
+  
+  python pnp_nonlinear.py. Output will be in python-plugandplay/results/pnp_output/nonlinear
 
-2. Run `./Cython_setup.sh` to set up cpp wrapper for ICD code
+## experiments/
+This directory contains wrappers for all image reconstruction experiments for both linear and nonlinear forward model case.
 
-3. run `python demo_sr.py -p <prior> -f <forward>`. 
+For experiments with linear forward model, an image filter-downsampling model is used.
 
-<prior> is the prior model option. See [Prior model choices](#Prior-model-choices) for further details.
+For experiments with nonlinear forward model, a blurry camera model is used.
 
+* #### ml_exp_linear.py: 
 
-<forward> is the optimization method for forward model proximal map update. See [Proximal Map Update Choices](#Proximal-map-optimization-method-choices) for further details.
+  Wrapper for linear case Pseudo ML estimation.
+  
+  output image files are in results/ml_output_linear/ directory
 
-4. Output image will be saved in Plugandplay-python directory.
+* #### ml_exp_nonlinear.py: 
 
-## Prior model choices 
-0(default option): Convolutional Neural Network ([Source Code](https://github.com/cszn/DnCNN), [Paper](https://arxiv.org/pdf/1608.03981.pdf))
+  Wrapper for nonlinear case Pseudo ML estimation.
+  
+  output image files are in results/ml_output_nonlinear/ directory
+  
+* #### pnp_linear.py: 
 
-1: Total Variation
+  Wrapper for plug and play reconstruction experiment of linear forward model.
+  
+  Input Arguments:
+  
+    -f: Forward model optimization method. 0: Deep Proximal Map. 1: ICD. Default choice is 0.
+    
+    A quick demo: `python pnp_linear.py -f 0`
+    
+    Output image files are in results/pnp_output/linear/ directory
+  
+* #### pnp_nonlinear.py: 
 
-2: Non-local Mean ([Paper](https://ieeexplore.ieee.org/document/1467423))
+  Wrapper for plug and play reconstruction experiment of nonlinear forward model.
 
-## Proximal map optimization method choices
-Optimization method can be changed by modifying parameter "optim_method" at line 24 in demo_sr.py. Below are the available choices:
+  Output image files are in results/pnp_output/nonlinear/ directory
+  
+* #### grad_test.py:
 
-0(default option): Approximation by Fourier Decomposition ([Paper](https://ieeexplore.ieee.org/document/1467423))
+  Gradient image experiment for nonlinear forward model. Given an input x and y (defined in the code), generate gradient image of ![gradient](https://latex.codecogs.com/gif.latex?%5Cnabla%20f%28x%29) approximated by deep proximal map and by tensorflow respectively, where ![fx](https://latex.codecogs.com/gif.latex?f%28x%29%3D%5Cfrac%7B1%7D%7B2%7D%7C%7Cy-A%28x%29%7C%7C%5E2_B).
+  
+  Output gradient images are in experiment/ directory.
+  
+  
+## cnn/
 
-1: Iterative Coordinate Descent(ICD)
+This directory contains all image pre-processing and model training code. It also contains pre-trained deep proximal map models for both linear and nonlinear forward models. 
 
-Note that ICD code is written in C++ and called by python with Cython. You need to run `./Cython_setup.sh` when using it the first time.
+#### Code
 
-## Parameter Tuning
+* train_nonlinear.py: training code for nonlinear forward model.
 
-### Default Paramters:
+* raw_data_gen.py: crops the training dataset images into 512x512 image patches, and save it as a pickle file `raw_input.dat`.
 
-Maximum iteration: 40 for SR; 100 for inpainting
+#### Pre-trained models
+Pretrained deep proximal map models are saved as `<model-name>.h5` (contains model weights) and `<model-name>.json` (contains model structures) files. Below are a list of pre-trained models:
 
-gamma: 1    update factor for rho
+* `model_nonlinear_noiseless_clip`: 
+  Model for nonlinear forward model case. Model Parameters are listed below:
+  
+  AWGN standard-deviation: \sigma_w = 0
+  
+  Standard-deviation of v with respect to x: \sigma = 0.05
+  
+  Standard-deviation of gaussian filter in nonlinear forward model: \sigma_g = 10
+  
+  Gamma-correction: \gamma = 2
+  
+  Low-pass coefficient for forward model: \alpha = 0.5
+  
+  Clip in forward model: True. `y=A(clip{x;0})`
 
-lambda: 50   Regularizer for image denoiser
+* `model_nonlinear_noiseless_noclip`: 
+  Same as the above model except that Forward model clipping is depreciated. 
+  
+* `model_sinc_noisy_simple_hr`:
+  Model for linear forward model with a sinc anti-aliasing filter. Parameters:
+  
+  \sigma = 0.2
 
-rho: 1    Adaptive update rule for the residual
+  \sigma_w = 0.05
+  
+  Downsampling factor: K = 4
+  
+  
+## util/
+This directory contains helper functions for all experiments. See below for a brief description of each module:
+  
+* #### plug_and_play_nonlinear.py: 
+  Core function for nonlinear forward model plug and play reconstruction.
+* #### plug_and_play_reconstruction.py: 
+  Core function for linear forward model plug and play reconstruction.  
+* #### ml_estimate_nonlinear.py:
+  Core function for Iterative pseudo ML estimate for nonlinear forward model
+* #### ml_estimate_linear.py:
+  Core function for Iterative pseudo ML estimate for linear forward model 
+* #### icd.cpp, icd.h, icdwrapper.cpp, icdwrapper.pyx:
+  C++ class for ICD optimization of linear forward model. The C++ function is called via Cython. When running ICD for the first time, you need to go to /python-plugandplay directory and run ./Cython_setup.sh to compile the C++ function.
+* #### grad.py:
+  Contains functions to approximate the gradient image for both linear and nonlinear forward models.
+* #### construct_forward_model.py:
+  Given an input image x, contruct y=A(x) for the forward model A(.) in both linear and nonlinear case.
+* #### sr_util.py:
+  Contains multiple helper functions for image filtering.
+  
 
-nl_mean denoiser: patch_distance = 11, patch_size = 7
-
-## Current issues to be addressed:
-For the super resolution problem, the aliasing effects increases rapidly for the case of large subsampling factors (8x and more). Initial guess is that the cutoff frequency for our anti-aliasing filter (currently a gaussian filter with variance 1) is above \pi/8, therefore causing aliasing effects in high frequency components. 
