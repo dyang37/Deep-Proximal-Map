@@ -6,6 +6,8 @@ Purdue University, School of Electrical and Computer Engineering
 ## Overview
 This python package implements deep proximal map model and related experiments (ML estimation, Plug and play reconstruction) for various inverse imaging problems.
 
+Note that this repo does NOT include original training data for deep proximal map. If you would like to retrain the model please download the training dataset [HERE](https://data.vision.ee.ethz.ch/cvl/DIV2K/) 
+
 ## Prerequisite
 Python 3.6
 
@@ -59,4 +61,15 @@ For experiments with nonlinear forward model, a blurry camera model is used.
   
 * #### grad_test.py:
 
-  Gradient image experiment for nonlinear forward model. Given an input x and y (defined in the code), generate gradient image of ![gradient](https://latex.codecogs.com/gif.latex?%5Cnabla%20f%28x%29), where ![fx](https://latex.codecogs.com/gif.latex?f%28x%29%3D%5Cfrac%7B1%7D%7B2%7D%7C%7Cy-A%28x%29%7C%7C%5E2_B)
+  Gradient image experiment for nonlinear forward model. Given an input x and y (defined in the code), generate gradient image of ![gradient](https://latex.codecogs.com/gif.latex?%5Cnabla%20f%28x%29) approximated by deep proximal map and by tensorflow respectively, where ![fx](https://latex.codecogs.com/gif.latex?f%28x%29%3D%5Cfrac%7B1%7D%7B2%7D%7C%7Cy-A%28x%29%7C%7C%5E2_B).
+  
+  Output gradient images are in experiment/ directory.
+  
+  
+### cnn/
+
+This directory contains all image pre-processing and model training code. It also contains pre-trained deep proximal map models for both linear and nonlinear forward models. 
+
+#### Code
+
+##### 
