@@ -21,8 +21,7 @@ matplotlib
 
 Cython
 
-## Code structure
-### experiments/
+## experiments/
 This directory contains wrappers for all image reconstruction experiments for both linear and nonlinear forward model case.
 
 For experiments with linear forward model, an image filter-downsampling model is used.
@@ -66,7 +65,7 @@ For experiments with nonlinear forward model, a blurry camera model is used.
   Output gradient images are in experiment/ directory.
   
   
-### cnn/
+## cnn/
 
 This directory contains all image pre-processing and model training code. It also contains pre-trained deep proximal map models for both linear and nonlinear forward models. 
 
