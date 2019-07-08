@@ -56,3 +56,7 @@ For experiments with nonlinear forward model, a blurry camera model is used.
   Wrapper for plug and play reconstruction experiment of nonlinear forward model.
 
   Output image files are in results/pnp_output/nonlinear/ directory
+  
+* #### grad_test.py:
+
+  Gradient image experiment for nonlinear forward model. Given an input x and y (defined in the code), generate gradient image of ![gradient](https://latex.codecogs.com/gif.latex?%5Cnabla%20f%28x%29), where ![fx](https://latex.codecogs.com/gif.latex?f%28x%29%3D%5Cfrac%7B1%7D%7B2%7D%7C%7Cy-A%28x%29%7C%7C%5E2_B)
