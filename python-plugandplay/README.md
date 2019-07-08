@@ -6,7 +6,7 @@ Purdue University, School of Electrical and Computer Engineering
 ## Overview
 This python package implements deep proximal map model and related experiments (ML estimation, Plug and play reconstruction) for various inverse imaging problems.
 
-Note that this repo does NOT include original training data for deep proximal map. If you would like to retrain the model please download the training dataset [HERE](https://data.vision.ee.ethz.ch/cvl/DIV2K/) 
+Note that this repo does NOT include original training data for deep proximal map. If you would like to retrain the model please download the training dataset [HERE](https://data.vision.ee.ethz.ch/cvl/DIV2K/).
 
 ## Prerequisite
 Python 3.6
@@ -72,4 +72,36 @@ This directory contains all image pre-processing and model training code. It als
 
 #### Code
 
-##### 
+* train_nonlinear.py: training code for nonlinear forward model.
+
+* raw_data_gen.py: crops the training dataset images into 512x512 image patches, and save it as a pickle file `raw_input.dat`.
+
+#### Pre-trained models
+Pretrained deep proximal map models are saved as `<model-name>.h5` (contains model weights) and `<model-name>.json` (contains model structures) files. Below are a list of pre-trained models:
+
+* `model_nonlinear_noiseless_clip`: 
+  Model for nonlinear forward model case. Model Parameters are listed below:
+  
+  AWGN standard-deviation: \sigma_w = 0
+  
+  Standard-deviation of v with respect to x: \sigma = 0.05
+  
+  Standard-deviation of gaussian filter in nonlinear forward model: \sigma_g = 10
+  
+  Gamma-correction: \gamma = 2
+  
+  Low-pass coefficient for forward model: \alpha = 0.5
+  
+  Clip in forward model: True. `y=A(clip{x;0})`
+
+* `model_nonlinear_noiseless_noclip`: 
+  Same as the above model except that Forward model clipping is depreciated. 
+  
+* `model_sinc_noisy_simple_hr`:
+  Model for linear forward model with a sinc anti-aliasing filter. Parameters:
+  
+  \sigma = 0.2
+
+  \sigma_w = 0.05
+  
+  Downsampling factor: K = 4
