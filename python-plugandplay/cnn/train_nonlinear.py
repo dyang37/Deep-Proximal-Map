@@ -16,15 +16,9 @@ config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
 from construct_forward_model import construct_nonlinear_model
 
-clip = False
-
 _train = True
 print('training switch: ',_train)
 dict_name = '/root/datasets/raw_input.dat'
-if clip:
-  model_name = 'model_nonlinear_noisy_clip'
-else:
-  model_name = 'model_nonlinear_noisy_noclip'
 dataset = pickle.load(open(dict_name,"rb"))
 v = np.array(dataset['v'])
 print(np.shape(v))
@@ -32,13 +26,26 @@ print(np.shape(v))
 print('total number of samples: ',n_samples)
 
 # parameters
-clip = False
+clip = True
 sig = 0.05
-sigw = 0.05
+sigw = 0.
 sigma_g = 10
 alpha = 0.5
 gamma = 2.
 forward_name = 'nonlinear'
+
+model_name = "model_nonlinear_"
+if sigw == 0:
+  model_name += "noiseless_"
+else:
+  model_name += "noisy_"
+
+if clip:
+  model_name += "clip"
+else:
+  model_name += "noclip"
+
+print("model name: ",model_name)
 
 epsil = []
 y_Av = []
@@ -72,12 +79,7 @@ input_yAv = layers.Input(shape=(rows,cols))
 input_v = layers.Input(shape=(rows,cols))
 yAv_in = layers.Reshape(in_shp_yAv+(1,))(input_yAv)
 v_in = layers.Reshape(in_shp_v+(1,))(input_v)
-v_ = layers.Conv2D(n_channels,(3,3),activation='relu',padding='same')(v_in)
-for _ in range(5):
-  v_ = layers.Conv2D(n_channels,(3,3),activation='relu',padding='same')(v_)
-v_ = layers.Conv2D(1,(3,3),activation='relu',padding='same')(v_)
-
-H_stack = layers.concatenate([yAv_in,v_],axis=-1)
+H_stack = layers.concatenate([yAv_in,v_in],axis=-1)
 H = layers.Conv2D(n_channels,(3,3),activation='relu',padding='same')(H_stack)
 
 for _ in range(5):
@@ -91,7 +93,7 @@ model.summary()
 
 # Start training
 batch_size = 128
-model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.0001))
+model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.001))
 if _train:
   history = model.fit([yAv_train,v_train], epsil_train, epochs=200, batch_size=batch_size,shuffle=True)
   model_json = model.to_json()

@@ -25,10 +25,10 @@ import matplotlib.pyplot as plt
 # return value: x, the reconstructed high resolution image
 
 
-def plug_and_play_nonlinear(y,sigma,alpha,sigw,gamma):
+def plug_and_play_nonlinear(y,sigma,alpha,sigw,gamma,clip):
   # load pre-trained denoiser model
-  output_dir = os.path.join(os.getcwd(),'./pnp_output/nonlinear/')
-  denoiser_dir=os.path.join(os.getcwd(),'./denoisers/DnCNN')
+  output_dir = os.path.join(os.getcwd(),'../results/pnp_output/nonlinear/')
+  denoiser_dir=os.path.join(os.getcwd(),'../denoisers/DnCNN')
   json_file = open(os.path.join(denoiser_dir,'model.json'), 'r')
   loaded_model_json = json_file.read()
   json_file.close()
@@ -36,8 +36,12 @@ def plug_and_play_nonlinear(y,sigma,alpha,sigw,gamma):
   denoiser_model.load_weights(os.path.join(denoiser_dir,'model.h5'))
   
   # load pre-trained deep proximal map model
-  pmap_dir=os.path.join(os.getcwd(),'cnn')
-  pmap_model_name = "model_nonlinear_noiseless_hr"
+  pmap_dir=os.path.join(os.getcwd(),'../cnn')
+  pmap_model_name = "model_nonlinear_noiseless_"
+  if clip:
+    pmap_model_name += "clip"
+  else:
+    pmap_model_name += "noclip"
   json_file = open(os.path.join(pmap_dir, pmap_model_name+'.json'), 'r')
   loaded_model_json = json_file.read()
   json_file.close()
@@ -56,7 +60,7 @@ def plug_and_play_nonlinear(y,sigma,alpha,sigw,gamma):
     x_old = copy.deepcopy(x)
     v_old = copy.deepcopy(v)
     xtilde = np.subtract(v,u)
-    fxtilde = construct_nonlinear_model(xtilde,sigma,alpha,0,gamma=gamma)
+    fxtilde = construct_nonlinear_model(xtilde,sigma,alpha,0,gamma=gamma, clip=clip)
     H = pseudo_prox_map_nonlinear(np.subtract(y,fxtilde),xtilde,pmap_model)
     x = np.add(xtilde, H)
     # denoising step

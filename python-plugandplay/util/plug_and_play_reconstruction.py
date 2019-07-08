@@ -2,12 +2,11 @@ import numpy as np
 import sys
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
-sys.path.append(os.path.join(os.getcwd(), "./denoisers/DnCNN"))
+sys.path.append(os.path.join(os.getcwd(), "../denoisers/DnCNN"))
 from skimage.io import imsave
 from keras.models import  model_from_json
 import copy
 from dncnn import cnn_denoiser, pseudo_prox_map
-from forward_model_optim import forward_model_optim
 from construct_forward_model import construct_forward_model
 import matplotlib
 matplotlib.use('Agg')
@@ -30,10 +29,10 @@ from icdwrapper import Pyicd
 def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,K,optim_method,filt_choice):
   # load pre-trained denoiser model
   if optim_method == 0:
-    output_dir = os.path.join(os.getcwd(),'./pnp_output/pmap/')
+    output_dir = os.path.join(os.getcwd(),'../results/pnp_output/pmap/')
   else:
-    output_dir = os.path.join(os.getcwd(),'./pnp_output/icd/')
-  denoiser_dir=os.path.join(os.getcwd(),'./denoisers/DnCNN')
+    output_dir = os.path.join(os.getcwd(),'../results/pnp_output/icd/')
+  denoiser_dir=os.path.join(os.getcwd(),'../denoisers/DnCNN')
   json_file = open(os.path.join(denoiser_dir,'model.json'), 'r')
   loaded_model_json = json_file.read()
   json_file.close()

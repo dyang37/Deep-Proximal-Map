@@ -3,7 +3,7 @@ import sys
 import os
 from math import sqrt
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
-sys.path.append(os.path.join(os.getcwd(), "./denoisers/DnCNN"))
+sys.path.append(os.path.join(os.getcwd(), "../denoisers/DnCNN"))
 from skimage.io import imsave
 from scipy.misc import imresize
 from construct_forward_model import construct_forward_model
@@ -14,13 +14,12 @@ from icdwrapper import Pyicd
 import timeit
 import copy
 from sklearn.metrics import mean_squared_error
-from forward_model_optim import forward_model_optim
 from dncnn import pseudo_prox_map
 from keras.models import model_from_json
 from grad import grad_f
 
 def ml_estimate(y,h,sigw,sig,K,filt_choice):
-  output_dir = os.path.join(os.getcwd(),'./output_linear/'+filt_choice+'/rand/noisy/')
+  output_dir = os.path.join(os.getcwd(),'../results/output_linear/'+filt_choice+'/rand/noisy/')
   [rows_lr, cols_lr] = np.shape(y)
   rows_hr = rows_lr*K
   cols_hr = cols_lr*K
@@ -29,7 +28,7 @@ def ml_estimate(y,h,sigw,sig,K,filt_choice):
   # initialize cpp wrapper for icd
   icd_cpp = Pyicd(y,h,K,lambd,sigw);
   # read pre-trained model for pseudo-proximal map
-  model_dir=os.path.join(os.getcwd(),'cnn')
+  model_dir=os.path.join(os.getcwd(),'../cnn')
   model_name = "model_gauss_noisy_simple_hr"
   json_file = open(os.path.join(model_dir, model_name+'.json'), 'r')
   loaded_model_json = json_file.read()
