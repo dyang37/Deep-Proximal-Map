@@ -21,6 +21,18 @@ matplotlib
 
 Cython
 
+## Quick Start
+1. Run ./Cython_setup.sh to compile C++ class for ICD optimization.
+2. Go to /experiments directory
+3. Run experiments:
+* #### nonlinear case Pseudo-ML estimation: 
+  
+  python ml_exp_nonlinear.py. Output will be in python-plugandplay/results/ml_output_nonlinear/ directory
+  
+* #### nonlinear case plug-and-play reconstruction: 
+  
+  python pnp_nonlinear.py. Output will be in python-plugandplay/results/pnp_output/nonlinear
+
 ## experiments/
 This directory contains wrappers for all image reconstruction experiments for both linear and nonlinear forward model case.
 
@@ -104,3 +116,26 @@ Pretrained deep proximal map models are saved as `<model-name>.h5` (contains mod
   \sigma_w = 0.05
   
   Downsampling factor: K = 4
+  
+  
+## util/
+This directory contains helper functions for all experiments. See below for a brief description of each module:
+  
+* #### plug_and_play_nonlinear.py: 
+  Core function for nonlinear forward model plug and play reconstruction.
+* #### plug_and_play_reconstruction.py: 
+  Core function for linear forward model plug and play reconstruction.  
+* #### ml_estimate_nonlinear.py:
+  Core function for Iterative pseudo ML estimate for nonlinear forward model
+* #### ml_estimate_linear.py:
+  Core function for Iterative pseudo ML estimate for linear forward model 
+* #### icd.cpp, icd.h, icdwrapper.cpp, icdwrapper.pyx:
+  C++ class for ICD optimization of linear forward model. The C++ function is called via Cython. When running ICD for the first time, you need to go to /python-plugandplay directory and run ./Cython_setup.sh to compile the C++ function.
+* #### grad.py:
+  Contains functions to approximate the gradient image for both linear and nonlinear forward models.
+* #### construct_forward_model.py:
+  Given an input image x, contruct y=A(x) for the forward model A(.) in both linear and nonlinear case.
+* #### sr_util.py:
+  Contains multiple helper functions for image filtering.
+  
+
