@@ -2,8 +2,10 @@ import numpy as np
 import sys
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
-sys.path.append(os.path.join(os.getcwd(), "./denoisers/DnCNN"))
+sys.path.append(os.path.join(os.getcwd(), "../denoisers/DnCNN"))
 from skimage.io import imsave
+import tensorflow as tf
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from keras.models import  model_from_json
 import copy
 from dncnn import cnn_denoiser, pseudo_prox_map_nonlinear

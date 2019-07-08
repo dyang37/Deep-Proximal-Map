@@ -15,11 +15,13 @@ import timeit
 import copy
 from sklearn.metrics import mean_squared_error
 from dncnn import pseudo_prox_map
+import tensorflow as tf
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from keras.models import model_from_json
 from grad import grad_f
 
 def ml_estimate(y,h,sigw,sig,K,filt_choice):
-  output_dir = os.path.join(os.getcwd(),'../results/output_linear/'+filt_choice+'/rand/noisy/')
+  output_dir = os.path.join(os.getcwd(),'../results/ml_output_linear/'+filt_choice+'/rand/noisy/')
   [rows_lr, cols_lr] = np.shape(y)
   rows_hr = rows_lr*K
   cols_hr = cols_lr*K

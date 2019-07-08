@@ -12,12 +12,14 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 from dncnn import pseudo_prox_map_nonlinear
+import tensorflow as tf
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from keras.models import model_from_json
 from grad import grad_nonlinear, grad_nonlinear_tf
 import copy
 
 def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
-  output_dir = os.path.join(os.getcwd(),'../results/output_nonlinear/')
+  output_dir = os.path.join(os.getcwd(),'../results/ml_output_nonlinear/')
   [rows, cols] = np.shape(y)
   N = rows*cols
   # initialize cpp wrapper for icd

@@ -1,6 +1,6 @@
 import numpy as np
-import sys,os,argparse
-sys.path.append(os.path.join(os.getcwd(), "util"))
+import sys,os
+sys.path.append(os.path.join(os.getcwd(), "../util"))
 from skimage.io import imread, imsave
 from math import sqrt
 from skimage.measure import compare_psnr
@@ -10,13 +10,6 @@ from plug_and_play_nonlinear import plug_and_play_nonlinear
 import matplotlib.pyplot as plt
 import scipy.io as io
 
-################## parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-f', action='store', dest='optim', help='proximal map update choce. 0: fourier decomposition; 1: ICD',type=int, default=1)
-args = parser.parse_args()
-optim_method = args.optim #0: Stanley's closed form solution 1: icd update
-optim_dict = {0:"deep proximal map", 1:"icd update"}
-
 
 ################### hyperparameters
 clip = False
@@ -25,7 +18,6 @@ sigma = 10
 alpha = 0.5
 gamma = 2
 
-print("Using ",optim_dict[optim_method],"as optimization method for forward model inversion...")
 ################### Data Proe-processing
 fig_in = 'test_gray'
 z = np.array(imread('../'+fig_in+'.png'), dtype=np.float32) / 255.0

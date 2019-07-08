@@ -4,6 +4,8 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 sys.path.append(os.path.join(os.getcwd(), "../denoisers/DnCNN"))
 from skimage.io import imsave
+import tensorflow as tf
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from keras.models import  model_from_json
 import copy
 from dncnn import cnn_denoiser, pseudo_prox_map
@@ -29,9 +31,9 @@ from icdwrapper import Pyicd
 def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,K,optim_method,filt_choice):
   # load pre-trained denoiser model
   if optim_method == 0:
-    output_dir = os.path.join(os.getcwd(),'../results/pnp_output/pmap/')
+    output_dir = os.path.join(os.getcwd(),'../results/pnp_output/linear/pmap/')
   else:
-    output_dir = os.path.join(os.getcwd(),'../results/pnp_output/icd/')
+    output_dir = os.path.join(os.getcwd(),'../results/pnp_output/linear/icd/')
   denoiser_dir=os.path.join(os.getcwd(),'../denoisers/DnCNN')
   json_file = open(os.path.join(denoiser_dir,'model.json'), 'r')
   loaded_model_json = json_file.read()
@@ -40,7 +42,7 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,K,optim_method,filt_choic
   denoiser_model.load_weights(os.path.join(denoiser_dir,'model.h5'))
   
   # load pre-trained deep proximal map model
-  pmap_dir=os.path.join(os.getcwd(),'cnn')
+  pmap_dir=os.path.join(os.getcwd(),'../cnn')
   pmap_model_name = "model_sinc_noisy_simple_hr"
   json_file = open(os.path.join(pmap_dir, pmap_model_name+'.json'), 'r')
   loaded_model_json = json_file.read()
