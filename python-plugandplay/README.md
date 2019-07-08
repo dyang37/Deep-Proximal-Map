@@ -49,7 +49,10 @@ For experiments with nonlinear forward model, a blurry camera model is used.
     
     A quick demo: `python pnp_linear.py -f 0`
     
+    Output image files are in results/pnp_output/linear/ directory
   
-* #### pnp_linear.py: Wrapper for plug and play reconstruction experiment of nonlinear forward model.
+* #### pnp_nonlinear.py: 
 
+  Wrapper for plug and play reconstruction experiment of nonlinear forward model.
 
+  Output image files are in results/pnp_output/nonlinear/ directory
