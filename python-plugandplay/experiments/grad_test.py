@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import copy
 
 clip = False
-sigw = 0.2
+sigw = 0.05
 sig = 0.05
 sigma_g = 10
 alpha = 0.5
@@ -20,9 +20,9 @@ fig_in = 'test_gray'
 
 model_dir=os.path.join(os.getcwd(),'../cnn')
 if clip:
-  model_name = "model_nonlinear_noiseless_clip"
+  model_name = "model_nonlinear_noisy_clip"
 else:
-  model_name = "model_nonlinear_noiseless_noclip"
+  model_name = "model_nonlinear_noisy_noclip"
 print("deep pmap model: ",model_name)
 json_file = open(os.path.join(model_dir, model_name+'.json'), 'r')
 loaded_model_json = json_file.read()
@@ -32,9 +32,9 @@ model = model_from_json(loaded_model_json)
 model.load_weights(os.path.join(model_dir,model_name+'.h5'))
 z = np.array(imread('../'+fig_in+'.png'), dtype=np.float32) / 255.
 [rows,cols] = np.shape(z)
-x = copy.deepcopy(z)
+#x = copy.deepcopy(z)
 #x = np.zeros((rows,cols))
-#x = np.random.rand(rows,cols)
+x = np.random.rand(rows,cols)
 Ax = construct_nonlinear_model(x, sigma_g, alpha, 0, gamma=gamma, clip=clip)
 y = construct_nonlinear_model(z, sigma_g, alpha, sigw, gamma=gamma, clip=clip)
 gradf_tf = grad_nonlinear_tf(x,y,sigma_g,alpha,sigw,gamma,clip=clip)
@@ -48,6 +48,12 @@ cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
 im = ax.imshow(H, cmap='coolwarm',vmin=-H.max(), vmax=H.max())
 fig.colorbar(im, cax=cax, orientation='horizontal')
 plt.savefig(os.path.join('H.png'))
+
+fig, ax = plt.subplots()
+cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
+im = ax.imshow(sig_gradf, cmap='coolwarm',vmin=-H.max(), vmax=H.max())
+fig.colorbar(im, cax=cax, orientation='horizontal')
+plt.savefig(os.path.join('gradf.png'))
 
 # plot grad
 fig, ax = plt.subplots()

@@ -17,38 +17,45 @@ config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
 from construct_forward_model import construct_nonlinear_model
 
+_train = True
+print('training switch: ',_train)
+dict_name = '/root/datasets/raw_input.dat'
+dataset = pickle.load(open(dict_name,"rb"))
+v = np.array(dataset['v'])
+[n_samples,rows,cols] = np.shape(v)
+
 # parameters
-clip = True
+clip = False
 sig = 0.05
-sigw = 0.
+sigw = 0.05
 sigma_g = 10
 alpha = 0.5
 gamma = 2.
 forward_name = 'nonlinear'
 
-_train = True
-print('training switch: ',_train)
-dict_name = '/root/datasets/raw_input.dat'
-if clip:
-  model_name = 'model_resnet_nonlinear_noiseless_clip'
-else:
-  model_name = 'model_resnet_nonlinear_noiseless_noclip'
+model_name = "model_resnet_nonlinear_"
 
 if sigw == 0:
-  dict_dir = '/root/datasets/noiseless_nonlinear_dict'
+  model_name += "noiseless_"
 else:
-  dict_dir = '/root/datasets/noisy_nonlinear_dict'
+  model_name += "noisy_"
+if clip:
+  model_name += "clip"
+else:
+  model_name += "noclip"
 
-
-v = np.empty((0,512,512))
-epsil = np.empty((0,512,512))
-y_Av = np.empty((0,512,512))
-for n_dict in range(0,3):
-  dict_name = dict_dir+str(n_dict)+'.dat'
-  dataset = pickle.load(open(dict_name,"rb"))
-  v = np.append(v,dataset["v"],axis=0)  
-  epsil = np.append(epsil,dataset["epsil"],axis=0)  
-  y_Av = np.append(y_Av,dataset["y_Av"],axis=0)  
+epsil = []
+y_Av = []
+for v_img in v:
+  epsil_k = np.random.normal(0,sig,v_img.shape)
+  x_img = np.add(v_img, epsil_k)
+  y = construct_nonlinear_model(x_img, sigma_g, alpha, sigw, gamma=gamma,clip=clip)
+  Av = construct_nonlinear_model(v_img, sigma_g, alpha, 0, gamma=gamma,clip=clip)
+  y_Av.append(y-Av)
+  epsil.append(epsil_k)
+# Random Shuffle and training/test set selection
+epsil  = np.array(epsil)
+y_Av = np.array(y_Av)
 
 n_samples,rows,cols = v.shape
 

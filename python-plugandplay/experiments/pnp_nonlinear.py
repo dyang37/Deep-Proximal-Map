@@ -30,4 +30,4 @@ figname = 'pnp_input_'+filt_choice+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
 ################## Plug and play ADMM iterative reconstruction
-x = plug_and_play_nonlinear(y,sigma,alpha,sigw,gamma,clip)
+x = plug_and_play_nonlinear(z,y,sigma,alpha,sigw,gamma,clip)

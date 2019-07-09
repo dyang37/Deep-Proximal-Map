@@ -26,9 +26,9 @@ print(np.shape(v))
 print('total number of samples: ',n_samples)
 
 # parameters
-clip = True
+clip = False
 sig = 0.05
-sigw = 0.
+sigw = 0.05
 sigma_g = 10
 alpha = 0.5
 gamma = 2.
@@ -102,9 +102,9 @@ if _train:
   model.save_weights(model_name+".h5")
   print("model saved to disk")
   plt.figure()
-  plt.plot(np.sqrt(history.history['loss']))
+  plt.semilogy(np.sqrt(history.history['loss']))
   plt.xlabel('epoch')
-  plt.ylabel('loss')
+  plt.ylabel('$log\{mse\}$')
   plt.title('training Loss')
   plt.savefig('loss.png')
 

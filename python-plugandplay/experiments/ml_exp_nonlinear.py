@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import scipy.io as io
 
 ################### hyperparameters
-clip = True
+clip = False
 sigw = 0.05
 sig = 0.05
 sigma_g = 10
@@ -23,5 +23,5 @@ print('input image size: ',np.shape(z))
 ################## Forward model construction
 filt_choice = 'nonlinear'
 print("filter choice: ",filt_choice)
-y = construct_nonlinear_model(z, sigma_g, alpha, 0, gamma=gamma, clip=clip)
+y = construct_nonlinear_model(z, sigma_g, alpha, sigw, gamma=gamma, clip=clip)
 ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip)

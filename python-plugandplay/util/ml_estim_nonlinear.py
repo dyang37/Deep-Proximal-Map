@@ -26,12 +26,10 @@ def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
   # read pre-trained model for pseudo-proximal map
   model_dir=os.path.join(os.getcwd(),'../cnn')
   if clip:
-    #model_name = "model_nonlinear_noiseless_clip"
-    model_name = "model_nonlinear_noiseless_clip"
+    model_name = "model_nonlinear_noisy_clip"
     output_dir = os.path.join(output_dir,'clip')
   else:
-    #model_name = "model_nonlinear_noiseless_noclip"
-    model_name = "model_nonlinear_noiseless_noclip"
+    model_name = "model_nonlinear_noisy_noclip"
     output_dir = os.path.join(output_dir,'noclip')
   print("deep pmap model: ",model_name)
   if sigw == 0:
@@ -46,30 +44,30 @@ def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
   # load weights into new model
   model.load_weights(os.path.join(model_dir,model_name+'.h5'))
   # iterative reconstruction
-  v_cnn = np.random.rand(rows,cols)
+  x_cnn = np.random.rand(rows,cols)
   
   print(output_dir)
-  imsave(os.path.join(output_dir,'v_init.png'), np.clip(v_cnn,0,None))
+  imsave(os.path.join(output_dir,'v_init.png'), np.clip(x_cnn,0,None))
   ml_cost = []
   for itr in range(50):
     print('iteration ',itr)
-    fv = construct_nonlinear_model(v_cnn,sigma_g,alpha,0,gamma=gamma, clip=clip)
-    ml_cost.append(((y-fv)**2).mean(axis=None))
-    imsave(os.path.join(output_dir,'ml_output_cnn_itr'+str(itr+1)+'.png'), np.clip(v_cnn,0,1))
-    err_y = y-fv
+    fx = construct_nonlinear_model(x_cnn,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    ml_cost.append(sqrt(((y-fx)**2).mean(axis=None)))
+    imsave(os.path.join(output_dir,'ml_output_cnn_itr'+str(itr+1)+'.png'), np.clip(x_cnn,0,1))
+    err_y = y-fx
     fig, ax = plt.subplots()
     cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
-    im = ax.imshow(err_y, cmap='coolwarm')
+    im = ax.imshow(err_y, cmap='coolwarm',vmin=-err_y.max(),vmax=err_y.max())
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'y_err_itr'+str(itr+1)+'.png'))
     # deep proximal map update
-    grad_f_tf = grad_nonlinear_tf(v_cnn,y,sigma_g,alpha,sigw,gamma,clip=clip)
-    grad_f = grad_nonlinear(v_cnn,y,sigma_g,alpha,sigw,gamma,clip=clip)
+    grad_f_tf = grad_nonlinear_tf(x_cnn,y,sigma_g,alpha,sigw,gamma,clip=clip)
+    grad_f = grad_nonlinear(x_cnn,y,sigma_g,alpha,sigw,gamma,clip=clip)
     sig_gradf_tf = -sig*sig*grad_f_tf
     sig_gradf = -sig*sig*grad_f
-    H = pseudo_prox_map_nonlinear(np.subtract(y,fv),v_cnn,model)
+    H = pseudo_prox_map_nonlinear(np.subtract(y,fx),x_cnn,model)
     #H = copy.deepcopy(sig_gradf_tf)
-    v_cnn = np.clip(np.add(v_cnn, H),0,1)
+    x_cnn = np.clip(np.add(x_cnn, H),0,None)
     # make plots
     fig, ax = plt.subplots()
     cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
@@ -87,7 +85,7 @@ def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'gradient_itr'+str(itr+1)+'.png'))
  
-  y_cnn = construct_nonlinear_model(v_cnn,sigma_g,alpha,0,gamma=gamma, clip=clip)
+  y_cnn = construct_nonlinear_model(x_cnn,sigma_g,alpha,0,gamma=gamma, clip=clip)
   mse_y_gd = ((y-y_cnn)**2).mean(axis=None)
   print('pixelwise mse value for y between cnn and groundtruth: ',mse_y_gd)
   
@@ -96,13 +94,11 @@ def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
   plt.semilogy(list(range(ml_cost.__len__())),ml_cost,label="deep prox map")
   plt.legend(loc='upper left')
   plt.xlabel('iteration')
-  plt.ylabel('ML cost $log\{\dfrac{1}{N}||Y-f(x)||^2\}$')
+  plt.ylabel('ML cost $log\{\sqrt{\dfrac{1}{N}||Y-A(x)||^2\}}$')
   plt.savefig(os.path.join(output_dir,'ml_cost.png'))
-  err_y = np.subtract(y,y_cnn) + 0.5
   # save output images
   imsave(os.path.join(output_dir,'y_input.png'), np.clip(y,0,1))
-  imsave(os.path.join(output_dir,'diff_y.png'), np.clip(err_y,0,1))
-  imsave(os.path.join(output_dir,'ml_output_cnn.png'), np.clip(v_cnn,0,1))
+  imsave(os.path.join(output_dir,'ml_output_cnn.png'), np.clip(x_cnn,0,1))
   imsave(os.path.join(output_dir,'forward_modeled_cnn.png'), np.clip(y_cnn,0,1))
   print("Done.")
   return
