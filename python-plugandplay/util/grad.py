@@ -28,7 +28,7 @@ def grad_nonlinear(x,y,sigma,alpha,sigw,gamma,clip=True):
   filt_input = dy_dylin*y_Ax
   g = gauss2D((15,15),sigma)
   filt_output = alpha*convolve(filt_input,g,mode='wrap')+(1-alpha)*filt_input
-  grad_fx = -filt_output*dxlin_dx / (sigw*sigw)
+  grad_fx = -filt_output*dxlin_dx / (2*sigw*sigw)
   return grad_fx
 
 def grad_nonlinear_tf(x,y,sigma_g,alpha,sigw,gamma,clip=True):
@@ -47,7 +47,7 @@ def grad_nonlinear_tf(x,y,sigma_g,alpha,sigw,gamma,clip=True):
   filter_output = tf.reshape(tf.nn.convolution(x_lin_4d,g_4d,padding='SAME'),[rows,cols])
   Ax_tf = (alpha*filter_output + (1-alpha)*x_lin)**(1./gamma)
   y_Ax = y_tf-Ax_tf
-  fx_tf = tf.reduce_sum(tf.multiply(y_Ax,y_Ax))/(sigw*sigw)
+  fx_tf = tf.reduce_sum(tf.multiply(y_Ax,y_Ax))/(2*sigw*sigw)
   grad_fx_tf = tf.gradients(fx_tf,x_tf)
   with tf.Session() as sess:
     grad_fx = sess.run(grad_fx_tf)

@@ -18,7 +18,7 @@ from keras.models import model_from_json
 from grad import grad_nonlinear, grad_nonlinear_tf
 import copy
 
-def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
+def ml_gradient_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
   output_dir = os.path.join(os.getcwd(),'../results/ml_output_nonlinear/')
   [rows, cols] = np.shape(y)
   N = rows*cols
@@ -44,32 +44,42 @@ def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
   # load weights into new model
   model.load_weights(os.path.join(model_dir,model_name+'.h5'))
   # iterative reconstruction
-  x = np.random.rand(rows,cols)
+  x_pml = np.random.rand(rows,cols)
+  x_grad = copy.deepcopy(x_pml) 
   print(output_dir)
-  imsave(os.path.join(output_dir,'v_init.png'), np.clip(x,0,None))
-  ml_cost = []
-  grad_diff_mse = []
+  imsave(os.path.join(output_dir,'v_init.png'), np.clip(x_pml,0,None))
+  ml_cost_pml = []
+  ml_cost_grad = []
   for itr in range(50):
     print('iteration ',itr)
-    fx = construct_nonlinear_model(x,sigma_g,alpha,0,gamma=gamma, clip=clip)
-    ml_cost.append(sqrt(((y-fx)**2).mean(axis=None)))
-    imsave(os.path.join(output_dir,'pml_output_itr'+str(itr)+'.png'), np.clip(x,0,1))
-    err_y = y-fx
+    fx_pml = construct_nonlinear_model(x_pml,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    fx_grad = construct_nonlinear_model(x_grad,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    ml_cost_pml.append(sqrt(((y-fx_pml)**2).mean(axis=None)))
+    ml_cost_grad.append(sqrt(((y-fx_grad)**2).mean(axis=None)))
+    imsave(os.path.join(output_dir,'pml_output_itr'+str(itr+1)+'.png'), np.clip(x_pml,0,1))
+    imsave(os.path.join(output_dir,'gradml_output_itr'+str(itr+1)+'.png'), np.clip(x_grad,0,1))
+    err_y_pml = y-fx_pml
+    err_y_grad = y-fx_grad
     fig, ax = plt.subplots()
     cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
-    im = ax.imshow(err_y, cmap='coolwarm',vmin=-err_y.max(),vmax=err_y.max())
+    im = ax.imshow(err_y_pml, cmap='coolwarm',vmin=-err_y_pml.max(),vmax=err_y_pml.max())
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'y_err_pml_itr'+str(itr+1)+'.png'))
     
+    fig, ax = plt.subplots()
+    cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
+    im = ax.imshow(err_y_grad, cmap='coolwarm',vmin=-err_y_pml.max(),vmax=err_y_pml.max())
+    fig.colorbar(im, cax=cax, orientation='horizontal')
+    plt.savefig(os.path.join(output_dir,'y_err_grad_itr'+str(itr+1)+'.png'))
+
     # deep proximal map update
-    grad_f_tf = grad_nonlinear_tf(x,y,sigma_g,alpha,sigw,gamma,clip=clip)
-    grad_f = grad_nonlinear(x,y,sigma_g,alpha,sigw,gamma,clip=clip)
+    grad_f_tf = grad_nonlinear_tf(x_grad,y,sigma_g,alpha,sigw,gamma,clip=clip)
+    grad_f = grad_nonlinear(x_grad,y,sigma_g,alpha,sigw,gamma,clip=clip)
     sig_gradf_tf = -sig*sig*grad_f_tf
     sig_gradf = -sig*sig*grad_f
-    H = pseudo_prox_map_nonlinear(np.subtract(y,fx),x,model)
-    grad_diff_mse.append(sqrt(((sig_gradf-H)**2).mean(axis=None)))
-
-    x = np.clip(np.add(x, H),0,None)
+    H = pseudo_prox_map_nonlinear(np.subtract(y,fx_pml),x_pml,model)
+    x_pml = np.clip(np.add(x_pml, H),0,None)
+    x_grad = np.clip(np.add(x_grad, sig_gradf_tf),0,1)
     # make plots
     fig, ax = plt.subplots()
     cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
@@ -81,29 +91,28 @@ def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
     im = ax.imshow(sig_gradf_tf, cmap='coolwarm',vmin=-H.max(),vmax=H.max())
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'gradient_tf_itr'+str(itr+1)+'.png'))
+    fig, ax = plt.subplots()
+    cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
+    im = ax.imshow(sig_gradf, cmap='coolwarm',vmin=-H.max(),vmax=H.max())
+    fig.colorbar(im, cax=cax, orientation='horizontal')
+    plt.savefig(os.path.join(output_dir,'gradient_itr'+str(itr+1)+'.png'))
  
-  y_cnn = construct_nonlinear_model(x,sigma_g,alpha,0,gamma=gamma, clip=clip)
+  y_cnn = construct_nonlinear_model(x_pml,sigma_g,alpha,0,gamma=gamma, clip=clip)
   mse_y_gd = ((y-y_cnn)**2).mean(axis=None)
   print('pixelwise mse value for y between cnn and groundtruth: ',mse_y_gd)
   
   # cost function plot
   plt.figure()
-  plt.semilogy(list(range(grad_diff_mse.__len__())),grad_diff_mse)
-  plt.legend(loc='upper left')
-  plt.xlabel('iteration')
-  plt.ylabel('mse')
-  plt.savefig(os.path.join(output_dir,'grad_diff_mse.png'))
-  plt.figure()
-  plt.semilogy(list(range(ml_cost.__len__())),ml_cost,label="PML with deep prox map")
+  plt.semilogy(list(range(ml_cost_pml.__len__())),ml_cost_pml,label="PML with deep prox map")
+  plt.semilogy(list(range(ml_cost_grad.__len__())),ml_cost_grad,label="gradient ML reconstruction")
   plt.ylim(0.01, 0.4)
   plt.legend(loc='upper left')
   plt.xlabel('iteration')
   plt.ylabel('ML cost $\sqrt{\dfrac{1}{N}||Y-A(x)||^2}$')
   plt.savefig(os.path.join(output_dir,'ml_cost.png'))
-
   # save output images
   imsave(os.path.join(output_dir,'y_input.png'), np.clip(y,0,1))
-  imsave(os.path.join(output_dir,'ml_output_cnn.png'), np.clip(x,0,1))
+  imsave(os.path.join(output_dir,'ml_output_cnn.png'), np.clip(x_pml,0,1))
   imsave(os.path.join(output_dir,'forward_modeled_cnn.png'), np.clip(y_cnn,0,1))
   print("Done.")
   return

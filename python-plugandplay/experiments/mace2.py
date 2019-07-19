@@ -6,19 +6,19 @@ from math import sqrt
 from skimage.measure import compare_psnr
 from sr_util import gauss2D, windowed_sinc, avg_filt
 from construct_forward_model import construct_nonlinear_model
-from plug_and_play_nonlinear import plug_and_play_nonlinear
+from mace import mace
 import matplotlib.pyplot as plt
 import scipy.io as io
 
 
 ################### hyperparameters
 clip = False
-sigw = 0.15 # noise level
+sigw = 0.1 # noise level
 sigma_g = 10
 alpha = 0.5
 gamma = 2
 sig = 0.05
-beta = 1
+beta = 0.2
 p = 3
 
 ################### Data Proe-processing
@@ -33,4 +33,5 @@ figname = 'pnp_input_'+filt_choice+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)
 imsave(fig_fullpath, y)
 ################## Plug and play ADMM iterative reconstruction
-plug_and_play_nonlinear(p,z,y,sigma_g,alpha,beta,sigw,sig,gamma,clip)
+x = mace(p,z,y,sigma_g,alpha,beta,sigw,sig,gamma,clip,rho=0.2)
+

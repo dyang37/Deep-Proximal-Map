@@ -28,23 +28,19 @@ print('total number of samples: ',n_samples)
 # parameters
 clip = False
 sig = 0.05
-sigw = 0.05
+sigw = 0.10
 sigma_g = 10
 alpha = 0.5
 gamma = 2.
 forward_name = 'nonlinear'
 
-model_name = "model_nonlinear_"
-if sigw == 0:
-  model_name += "noiseless_"
-else:
-  model_name += "noisy_"
+model_name = "nonlinear_model/model_nonlinear_"
 
 if clip:
-  model_name += "clip"
+  model_name += "clip_sigw_"
 else:
-  model_name += "noclip"
-
+  model_name += "noclip_sigw_"
+model_name += str(sigw)
 print("model name: ",model_name)
 
 epsil = []
@@ -93,9 +89,9 @@ model.summary()
 
 # Start training
 batch_size = 128
-model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.001))
+model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.0002))
 if _train:
-  history = model.fit([yAv_train,v_train], epsil_train, epochs=200, batch_size=batch_size,shuffle=True)
+  history = model.fit([yAv_train,v_train], epsil_train, epochs=80, batch_size=batch_size,shuffle=True)
   model_json = model.to_json()
   with open(model_name+".json", "w") as json_file:
     json_file.write(model_json)

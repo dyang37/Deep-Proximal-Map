@@ -21,7 +21,5 @@ z = np.array(imread('../'+fig_in+'.png'), dtype=np.float32) / 255.0
 print('input image size: ',np.shape(z))
 
 ################## Forward model construction
-filt_choice = 'nonlinear'
-print("filter choice: ",filt_choice)
 y = construct_nonlinear_model(z, sigma_g, alpha, sigw, gamma=gamma, clip=clip)
 ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip)
