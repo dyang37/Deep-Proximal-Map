@@ -34,12 +34,11 @@ def from_tensor(img):
 
 
 
-def cnn_denoiser(noisy_img, model):
-    y = noisy_img.astype(np.float32)
-    y_  = to_tensor(y)
-    x_ = model.predict(y_) # inference
-    x_=from_tensor(x_)
-    return x_
+def cnn_denoiser(y, model):
+  y_ = to_tensor(y)
+  x_ = model.predict(y_) # inference
+  x = from_tensor(x_)
+  return x
         
 def pseudo_prox_map(y_fv, model):
   y_fv = y_fv.reshape((1,)+y_fv.shape)

@@ -17,20 +17,6 @@ def grad_f(K,h,noise,sigw):
   grad = 1./(sigw*sigw)*grad
   return grad
 
-# sanity check for gamma=1 case
-def grad_nonlinear(x,y,sigma,alpha,sigw,gamma,clip=True):
-  Ax = construct_nonlinear_model(x,sigma,alpha,0,gamma=gamma,clip=clip)
-  y_Ax = y-Ax
-  y_lin = y**gamma
-  x_lin = x**gamma
-  dy_dylin = y_lin**(1./gamma-1)
-  dxlin_dx = x**(gamma-1)
-  filt_input = dy_dylin*y_Ax
-  g = gauss2D((15,15),sigma)
-  filt_output = alpha*convolve(filt_input,g,mode='wrap')+(1-alpha)*filt_input
-  grad_fx = -filt_output*dxlin_dx / (2*sigw*sigw)
-  return grad_fx
-
 def grad_nonlinear_tf(x,y,sigma_g,alpha,sigw,gamma,clip=True):
   [rows,cols] = np.shape(x)
   lengthH = 15

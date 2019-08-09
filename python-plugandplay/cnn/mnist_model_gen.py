@@ -23,7 +23,7 @@ model.add(Dropout(0.2))
 model.add(Dense(10,activation=tf.nn.softmax))
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 if _train:
-  model.fit(x=x_train,y=y_train, epochs=20)
+  model.fit(x=x_train,y=y_train, epochs=100)
   model_json = model.to_json()
   with open(model_name+".json", "w") as json_file:
     json_file.write(model_json)
@@ -43,26 +43,29 @@ test_loss = loaded_model.evaluate(x_test, y_test)
 print("test loss: ",test_loss)
 
 print("Start generating training triplets")
-sigw = 0
-sig = 0.2
-yfv = []
+sigw = 0.05
+sig = 0.05
+yAv = []
 v = []
 epsil = []
-n_sample = 0
-for v_img in x_train:
-  fv = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
-  epsil_k = np.random.normal(0,sig,v_img.shape)
-  x_img = np.add(v_img, epsil_k)
+n_samples = 0
+for x_img in x_train:
+  n_samples += 1
+  epsil_k = np.random.normal(0,sig,x_img.shape)
+  v_img = np.add(x_img, epsil_k)
   y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
-  y_fv_k = np.subtract(y,fv)
-  yfv.append(y_fv_k)
+  y += np.random.normal(0,sigw,y.shape)
+  Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
+  y_Av_k = np.subtract(y,Av)
+  yAv.append(y_Av_k)
   v.append(v_img)
   epsil.append(epsil_k)
 
+yAv = np.reshape(yAv,(n_samples,10))
 print("shape of v: ",np.shape(v))
-print("shape of y-fv: ",np.shape(yfv))
-dataset = {'epsil':epsil,'y_fv':yfv, 'v':v}
-dict_name = '/root/datasets/mnist_triplets.dat'
+print("shape of y-Av: ",np.shape(yAv))
+dataset = {'epsil':epsil,'y_Av':yAv, 'v':v}
+dict_name = '/home/yang1467/deepProxMap/datasets/mnist_triplets_sigw'+str(sigw)+'.dat'
 fd = open(dict_name,'wb')
 pickle.dump(dataset, fd)
 fd.close()
