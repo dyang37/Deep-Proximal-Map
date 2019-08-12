@@ -66,7 +66,7 @@ def DnCNN(depth,filters=64,image_channels=1, use_bnorm=True):
         if use_bnorm:
             layer_count += 1
             #x = BatchNormalization(axis=3, momentum=0.1,epsilon=0.0001, name = 'bn'+str(layer_count))(x) 
-	    x = BatchNormalization(axis=3, momentum=0.0,epsilon=0.0001, name = 'bn'+str(layer_count))(x)
+            x = BatchNormalization(axis=3, momentum=0.0,epsilon=0.0001, name = 'bn'+str(layer_count))(x)
         layer_count += 1
         x = Activation('relu',name = 'relu'+str(layer_count))(x)  
     # last layer, Conv
