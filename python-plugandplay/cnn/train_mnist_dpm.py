@@ -19,9 +19,9 @@ _train = True
 print('training switch: ',_train)
 
 sig = 0.05
-sigw = 0.05
+sigw = 0.
 
-dict_name = '/home/yang1467/deepProxMap/datasets/mnist_triplets_sigw'+str(sigw)+'.dat'
+dict_name = '/root/datasets/mnist_triplets_sig'+str(sig)+'_sigw'+str(sigw)+'.dat'
 dataset = pickle.load(open(dict_name,"rb"))
 v = np.array(dataset['v'])
 y_Av = np.array(dataset['y_Av'])
@@ -31,13 +31,12 @@ print('total number of samples: ',n_samples)
 
 # parameters
 forward_name = 'mnist'
-model_name = "dpm_model_mnist/model_mnist_sigw_"
-model_name += str(sigw)
+model_name = "dpm_model_mnist/model_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
 print("model name: ",model_name)
 
 # Random Shuffle and training/test set selection
 np.random.seed(2019)
-n_train = n_samples//10*9
+n_train = n_samples
 train_idx = np.random.choice(range(0,n_samples), size=n_train, replace=False)
 print(train_idx)
 test_idx = list(set(range(0,n_samples))-set(train_idx))
@@ -72,7 +71,7 @@ model.summary()
 ###############
 
 # Start training
-batch_size = 256
+batch_size = 128
 model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.0002))
 if _train:
   history = model.fit([yAv_train,v_train], epsil_train, epochs=300, batch_size=batch_size,shuffle=True)

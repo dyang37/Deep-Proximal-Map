@@ -5,7 +5,7 @@ import numpy as np
 import pickle
 
 model_name = "mnist_forward_model"
-_train = False
+_train = True
 
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 x_train = x_train.astype('float32')
@@ -43,7 +43,7 @@ test_loss = loaded_model.evaluate(x_test, y_test)
 print("test loss: ",test_loss)
 
 print("Start generating training triplets")
-sigw = 0.05
+sigw = 0.
 sig = 0.05
 yAv = []
 v = []
@@ -65,7 +65,7 @@ yAv = np.reshape(yAv,(n_samples,10))
 print("shape of v: ",np.shape(v))
 print("shape of y-Av: ",np.shape(yAv))
 dataset = {'epsil':epsil,'y_Av':yAv, 'v':v}
-dict_name = '/home/yang1467/deepProxMap/datasets/mnist_triplets_sigw'+str(sigw)+'.dat'
+dict_name = '/root/datasets/mnist_triplets_sig'+str(sig)+'_sigw'+str(sigw)+'.dat'
 fd = open(dict_name,'wb')
 pickle.dump(dataset, fd)
 fd.close()
