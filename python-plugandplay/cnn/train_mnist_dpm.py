@@ -16,22 +16,28 @@ config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
 
 _train = True
+_log_data = False
 print('training switch: ',_train)
 
-sig = 0.05
+sig = "var"
 sigw = 0.
+datagen_method = "mnist_mixed"
 
-dict_name = '/root/datasets/mnist_triplets_sig'+str(sig)+'_sigw'+str(sigw)+'.dat'
-dataset = pickle.load(open(dict_name,"rb"))
+
+if _log_data:
+  model_name = "dpm_model_mnist/"+datagen_method+"/model_mixed3_log_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
+  dict_name = "/root/datasets/"+datagen_method+"/mnist_mixed3_log_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
+  dataset = pickle.load(open(dict_name,"rb"))
+  y_Av = np.array(dataset['log_y_Av'])
+else:
+  model_name = "dpm_model_mnist/"+datagen_method+"/model_mixed3_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
+  dict_name = "/root/datasets/"+datagen_method+"/mnist_mixed3_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
+  dataset = pickle.load(open(dict_name,"rb"))
+  y_Av = np.array(dataset['y_Av'])
 v = np.array(dataset['v'])
-y_Av = np.array(dataset['y_Av'])
 epsil = np.array(dataset['epsil'])
 [n_samples,rows,cols] = np.shape(v)
 print('total number of samples: ',n_samples)
-
-# parameters
-forward_name = 'mnist'
-model_name = "dpm_model_mnist/model_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
 print("model name: ",model_name)
 
 # Random Shuffle and training/test set selection
@@ -71,10 +77,10 @@ model.summary()
 ###############
 
 # Start training
-batch_size = 128
+batch_size = 256
 model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.0002))
 if _train:
-  history = model.fit([yAv_train,v_train], epsil_train, epochs=300, batch_size=batch_size,shuffle=True)
+  history = model.fit([yAv_train,v_train], epsil_train, epochs=150, batch_size=batch_size,shuffle=True)
   model_json = model.to_json()
   with open(model_name+".json", "w") as json_file:
     json_file.write(model_json)
