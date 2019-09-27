@@ -14,6 +14,7 @@ from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
+import keras.backend as K
 
 _train = True
 _log_data = False
@@ -25,23 +26,19 @@ datagen_method = "mnist_mixed"
 
 
 if _log_data:
-  model_name = "dpm_model_mnist/"+datagen_method+"/model_cnn_mixed4_log_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
-  dict_name = "/root/datasets/"+datagen_method+"/mnist_mixed4_log_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
+  model_name = "dpm_model_mnist/"+datagen_method+"/model_dense_mixed4_flatten_log_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
+  dict_name = "/root/datasets/"+datagen_method+"/mnist_mixed4_flatten_log_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
   dataset = pickle.load(open(dict_name,"rb"))
   y_Av = np.array(dataset['log_y_Av'])
 else:
-  model_name = "dpm_model_mnist/"+datagen_method+"/model_cnn_mixed4_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
-  dict_name = "/root/datasets/"+datagen_method+"/mnist_mixed4_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
+  model_name = "dpm_model_mnist/"+datagen_method+"/model_dense_mixed4_flatten_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
+  dict_name = "/root/datasets/"+datagen_method+"/mnist_mixed4_flatten_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
   dataset = pickle.load(open(dict_name,"rb"))
   y_Av = np.array(dataset['y_Av'])
 v = np.array(dataset['v'])
 epsil = np.array(dataset['epsil'])
-
-v = np.reshape(v,(-1,28,28))
-[n_samples,rows,cols] = np.shape(v)
+[n_samples,n_pixels] = np.shape(v)
 print('total number of samples: ',n_samples)
-print("model name: ",model_name)
-
 
 # Random Shuffle and training/test set selection
 np.random.seed(2019)
@@ -53,27 +50,28 @@ epsil_train = epsil[train_idx]
 yAv_train = y_Av[train_idx]
 v_train = v[train_idx]
 
+
 ############## DMP Model Design
-in_shp_yAv = np.shape(yAv_train)[1:]
+in_shp_y = np.shape(yAv_train)[1:]
 in_shp_v = np.shape(v_train)[1:]
 ### construct neural network graph
-n_channels = 32
 input_yAv = layers.Input(shape=(10,))
-input_v = layers.Input(shape=(rows,cols))
-yAv = layers.Reshape(in_shp_yAv+(1,))(input_yAv)
-v_in = layers.Reshape(in_shp_v+(1,))(input_v)
-for _ in range(3):
-  yAv = layers.Conv1D(rows,3,data_format="channels_first",activation='relu',padding='same')(yAv)
-for _ in range(3):
-  yAv = layers.Conv1D(cols,3,data_format="channels_last",activation='relu',padding='same')(yAv)
-yAv2D = layers.Reshape((rows,cols,1))(yAv)
-H_stack = layers.concatenate([yAv2D,v_in],axis=-1)
-H = layers.Conv2D(n_channels,(3,3),activation='relu',padding='same')(H_stack)
-
-for _ in range(5):
-  H = layers.Conv2D(n_channels,(3,3),activation='relu',padding='same')(H)
-H_tanh = layers.Conv2D(1,(3,3),activation='tanh',padding='same')(H)
-H_out = layers.Flatten()(H_tanh)
+input_v = layers.Input(shape=(n_pixels,))
+yAv_decode = layers.Dense(16,activation='relu')(input_yAv)
+yAv_decode = layers.Dense(32,activation='relu')(yAv_decode)
+yAv_decode = layers.Dense(64,activation='relu')(yAv_decode)
+yAv_decode = layers.Dense(128,activation='relu')(yAv_decode)
+yAv_decode = layers.Dense(784,activation='relu')(yAv_decode)
+yAv_decode = layers.Reshape((28,28,1))(yAv_decode)
+reshape_v = layers.Reshape((28,28,1))(input_v)
+H = layers.concatenate([yAv_decode,reshape_v],axis=-1)
+H = layers.Conv2D(32,(5,5),padding='same',activation='relu')(H)
+H = layers.Conv2D(16,(5,5),padding='same',activation='relu')(H)
+H = layers.Conv2D(8,(5,5),padding='same',activation='relu')(H)
+H = layers.Conv2D(4,(5,5),padding='same',activation='relu')(H)
+H = layers.Conv2D(2,(5,5),padding='same',activation='relu')(H)
+H = layers.Conv2D(1,(5,5),padding='same',activation='tanh')(H)
+H_out = layers.Flatten()(H)
 model = models.Model(inputs=[input_yAv,input_v],output=H_out)
 model = multi_gpu_model(model, gpus=3)
 model.summary()
@@ -115,3 +113,4 @@ epsil_test = epsil[test_idx]
 loaded_model.compile(loss='mean_squared_error',optimizer='adam')
 test_loss = loaded_model.evaluate([yAv_test,v_test], epsil_test)
 print('test loss:', test_loss)
+print("model name: ",model_name)

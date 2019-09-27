@@ -4,18 +4,16 @@ from keras.layers import Input,Reshape, Dense, Conv2D, Dropout, Flatten, MaxPool
 import numpy as np
 import pickle
 import copy
-import random
 
 model_name = "mnist_forward_autoencoder"
-_train = False
-_log_data = False
+_train = True
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
-x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
+x_train = x_train.astype('float64')
+x_test = x_test.astype('float64')
 x_train /= 255.
 x_test /= 255.
-x_train = x_train.reshape((len(x_train), np.prod(x_train.shape[1:])))
-x_test = x_test.reshape((len(x_test), np.prod(x_test.shape[1:])))
+x_train = x_train.reshape((-1, 28*28))
+x_test = x_test.reshape((-1, 28*28))
 print(x_train.shape)
 print(x_test.shape)
 input_img = Input(shape=(784,))
@@ -55,48 +53,52 @@ epsil = []
 n_samples = x_train.shape[0]
 datagen_method = "mnist_mixed"
 np.random.seed(2019)
-for v_img in x_train[0:n_samples//2]:
-  sig = random.uniform(0,0.3)
+for v_img in x_train[0:n_samples//4]:
+  sig = np.random.uniform(0,0.3)
   epsil_k = np.random.normal(0,sig,v_img.shape)
   x_img = v_img+epsil_k
   y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
   y += np.random.normal(0,sigw,y.shape)
   Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
-  if _log_data:
-    y_Av_k = np.log10(y+perterb) - np.log10(Av+perterb)
-  else:
-    y_Av_k = y-Av
+  y_Av_k = y-Av
   yAv.append(y_Av_k)
   v.append(v_img)
   epsil.append(epsil_k)
-for x_img in x_train[n_samples//2:n_samples-20]:
-  sig = random.uniform(0,0.3)
+for x_img in x_train[n_samples//4:2*n_samples//4]:
+  sig = np.random.uniform(0,0.3)
   epsil_k = np.random.normal(0,sig,x_img.shape)
   v_img = x_img - epsil_k
   y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
   y += np.random.normal(0,sigw,y.shape)
   Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
-  if _log_data:
-    y_Av_k = np.log10(y+perterb) - np.log10(Av+perterb)
-  else:
-    y_Av_k = y-Av
+  y_Av_k = y-Av
+  yAv.append(y_Av_k)
+  v.append(v_img)
+  epsil.append(epsil_k)
+x_idx_list = np.random.choice(range(n_samples*2//4,n_samples*3//4), size=n_samples//4, replace=False)
+v_idx_list = np.random.choice(range(n_samples*2//4,n_samples*3//4), size=n_samples//4, replace=False)
+for (x_idx,v_idx) in zip(x_idx_list,v_idx_list):
+  x_img = x_train[x_idx]
+  v_img = x_train[v_idx]
+  epsil_k = x_img - v_img
+  y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
+  y += np.random.normal(0,sigw,y.shape)
+  Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
+  y_Av_k = y-Av
   yAv.append(y_Av_k)
   v.append(v_img)
   epsil.append(epsil_k)
 
-for _ in range(n_samples//2):
-  yAv.append(np.zeros((1,10)))
-  v.append(np.random.rand(28*28,))
+for v_img in x_train[3*n_samples//4:n_samples-20]:
   epsil.append(np.zeros((28*28,)))
-
+  yAv.append(np.zeros((1,10)))
+  v.append(v_img)
 
 yAv = np.reshape(yAv,(-1,10))
 print("shape of v: ",np.shape(v))
 print("shape of y-Av: ",np.shape(yAv))
-dict_name = '/root/datasets/'+datagen_method+'/mnist_mixed3_'
+dict_name = '/root/datasets/'+datagen_method+'/mnist_mixed4_'
 dict_name += 'flatten_'
-if _log_data:
-  dict_name += 'log_'
 dict_name += 'triplets_sigvar_sigw'+str(sigw)+'.dat'
 print('dict_name = ',dict_name)
 dataset = {'epsil':epsil,'y_Av':yAv, 'v':v}

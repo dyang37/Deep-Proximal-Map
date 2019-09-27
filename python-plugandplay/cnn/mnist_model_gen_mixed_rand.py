@@ -55,21 +55,8 @@ epsil = []
 n_samples = x_train.shape[0]
 datagen_method = "mnist_mixed"
 np.random.seed(2019)
-for v_img in x_train[0:n_samples//2]:
-  sig = random.uniform(0,0.3)
-  epsil_k = np.random.normal(0,sig,v_img.shape)
-  x_img = v_img+epsil_k
-  y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
-  y += np.random.normal(0,sigw,y.shape)
-  Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
-  if _log_data:
-    y_Av_k = np.log10(y+perterb) - np.log10(Av+perterb)
-  else:
-    y_Av_k = y-Av
-  yAv.append(y_Av_k)
-  v.append(v_img)
-  epsil.append(epsil_k)
-for x_img in x_train[n_samples//2:n_samples-20]:
+
+for x_img in x_train[0:n_samples//2]:
   sig = random.uniform(0,0.3)
   epsil_k = np.random.normal(0,sig,x_img.shape)
   v_img = x_img - epsil_k
@@ -84,16 +71,43 @@ for x_img in x_train[n_samples//2:n_samples-20]:
   v.append(v_img)
   epsil.append(epsil_k)
 
+for v_img in x_train[n_samples//2:n_samples-20]:
+  sig = random.uniform(0,0.3)
+  epsil_k = np.random.normal(0,sig,v_img.shape)
+  x_img = v_img + epsil_k
+  y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
+  y += np.random.normal(0,sigw,y.shape)
+  Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
+  if _log_data:
+    y_Av_k = np.log10(y+perterb) - np.log10(Av+perterb)
+  else:
+    y_Av_k = y-Av
+  yAv.append(y_Av_k)
+  v.append(v_img)
+  epsil.append(epsil_k)
+
 for _ in range(n_samples//2):
+  x_img = np.random.rand(28*28,)
+  sig = random.uniform(0,0.3)
+  epsil_k = np.random.normal(0,sig,x_img.shape)
+  v_img = x_img - epsil_k
   yAv.append(np.zeros((1,10)))
   v.append(np.random.rand(28*28,))
   epsil.append(np.zeros((28*28,)))
 
+for _ in range(n_samples//2):
+  v_img = np.random.rand(28*28,)
+  sig = random.uniform(0,0.3)
+  epsil_k = np.random.normal(0,sig,v_img.shape)
+  x_img = v_img + epsil_k
+  yAv.append(np.zeros((1,10)))
+  v.append(np.random.rand(28*28,))
+  epsil.append(np.zeros((28*28,)))
 
 yAv = np.reshape(yAv,(-1,10))
 print("shape of v: ",np.shape(v))
 print("shape of y-Av: ",np.shape(yAv))
-dict_name = '/root/datasets/'+datagen_method+'/mnist_mixed3_'
+dict_name = '/root/datasets/'+datagen_method+'/mnist_mixed_rand_'
 dict_name += 'flatten_'
 if _log_data:
   dict_name += 'log_'

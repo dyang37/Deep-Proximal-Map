@@ -19,17 +19,17 @@ import matplotlib.pyplot as plt
 from skimage.restoration import denoise_nl_means
 from math import sqrt
 
-def mace2(z,y,sigma_g,alpha,beta,sigw,nl,sig,gamma,clip,w=0.5,rho=0.5, savefig=False):
+def ce2(z,y,sigma_g,alpha,beta,sigw,nl,sig,gamma,clip,w=0.5,rho=0.5, savefig=False):
   # load pre-trained denoiser model
   if savefig:
-    output_dir = os.path.join(os.getcwd(),'../results/mace2')
+    output_dir = os.path.join(os.getcwd(),'../results/ce2')
     output_dir = os.path.join(output_dir,"sigma_"+str(nl))
     if not os.path.exists(output_dir):
       os.makedirs(output_dir)
-  denoiser_name = "model_109"
-  denoiser_dir="/home/yang1467/deepProxMap/my_plug_and_play/python-plugandplay/denoisers/DnCNN/DnCNN/TrainingCodes/dncnn_keras/models/"
+  denoiser_name = "model_150"
+  denoiser_dir="/root/my_plug_and_play/python-plugandplay/denoisers/DnCNN/DnCNN/TrainingCodes/dncnn_keras/models/"
   denoiser_dir=os.path.join(denoiser_dir,'DnCNN_sigma'+str(nl))
-  denoiser_name = "model_109"
+  denoiser_name = "model_150"
   denoiser_model = DnCNN(depth=17,filters=64,image_channels=1,use_bnorm=True)
   denoiser_model.load_weights(os.path.join(denoiser_dir,denoiser_name+'.hdf5'))
   
@@ -70,19 +70,18 @@ def mace2(z,y,sigma_g,alpha,beta,sigw,nl,sig,gamma,clip,w=0.5,rho=0.5, savefig=F
     imsave(os.path.join(output_dir,'mace_output_w_'+str(w)+'.png'),np.clip(X_ret,0,1))
   return sqrt(((X_ret-z)**2).mean(axis=None))
 
-def mace3(z,y,sigma_g,alpha,beta,sigw,nl_list,sig,gamma,clip,w=0.5,rho=0.5, savefig=False):
+def mace(z,y,sigma_g,alpha,beta,sigw,nl_list,sig,gamma,clip,w,rho=0.5, savefig=False):
   # load pre-trained denoiser model
   if savefig:
-    output_dir = os.path.join(os.getcwd(),'../results/mace3/')
+    output_dir = os.path.join(os.getcwd(),'../results/mace/')
     output_dir = os.path.join(output_dir,'optimal/')
     if not os.path.exists(output_dir):
       os.makedirs(output_dir)
-  denoiser_name = "model_100"
+  denoiser_name = "model_150"
   dncnn_model_list = []
   for nl in nl_list:
-    denoiser_dir="/home/yang1467/deepProxMap/my_plug_and_play/python-plugandplay/denoisers/DnCNN/DnCNN/TrainingCodes/dncnn_keras/models/"
+    denoiser_dir="/root/my_plug_and_play/python-plugandplay/denoisers/DnCNN/DnCNN/TrainingCodes/dncnn_keras/models/"
     denoiser_dir=os.path.join(denoiser_dir,'DnCNN_sigma'+str(nl))
-    denoiser_name = "model_100"
     denoiser_model = DnCNN(depth=17,filters=64,image_channels=1,use_bnorm=True)
     denoiser_model.load_weights(os.path.join(denoiser_dir,denoiser_name+'.hdf5'))
     dncnn_model_list.append(denoiser_model)
@@ -101,29 +100,31 @@ def mace3(z,y,sigma_g,alpha,beta,sigw,nl_list,sig,gamma,clip,w=0.5,rho=0.5, save
   pmap_model.load_weights(os.path.join(pmap_dir,pmap_model_name+'.h5'))
   [rows, cols] = np.shape(y)
   # initialization  
-  X1 = np.random.rand(rows, cols)
-  X2 = copy.deepcopy(X1)
-  X3 = copy.deepcopy(X1)
-  W1 = copy.deepcopy(X1)
-  W2 = copy.deepcopy(X1)
-  W3 = copy.deepcopy(X1)
-  
+  X = []
+  W = []
+  X_img = np.random.rand(rows, cols)
+  for _ in range(nl_list.__len__()+1):
+    X.append(copy.deepcopy(X_img))
+    W.append(copy.deepcopy(X_img)) 
   # iterative reconstruction
   for itr in range(20):
-    sig_n = sqrt(beta)*sig
-    X1 = cnn_denoiser(W1, dncnn_model_list[0])
-    X2 = cnn_denoiser(W2, dncnn_model_list[1])
-    
-    AW3 = construct_nonlinear_model(W3,sigma_g,alpha,0,gamma=gamma,clip=clip)
-    X3 = pseudo_prox_map_nonlinear(np.subtract(y,AW3),W3,pmap_model) + W3
-    Z = w*((2*X1-W1)+(2*X2-W2))/2. + (1.-w)*(2*X3-W3)
-    W1 = W1 + 2*rho*(Z-X1)
-    W2 = W2 + 2*rho*(Z-X2)
-    W3 = W2 + 2*rho*(Z-X3)
-    X_ret = w*(X1+X2)/2+(1-w)*X3
+    for i in range(nl_list.__len__()):
+      X[i] = cnn_denoiser(W[i], dncnn_model_list[i])
+    AW_fm = construct_nonlinear_model(W[-1],sigma_g,alpha,0,gamma=gamma,clip=clip)
+    X[-1] = pseudo_prox_map_nonlinear(np.subtract(y,AW_fm),W[-1],pmap_model) + W[-1]
+    Z = np.zeros((rows,cols))
+    for i in range(nl_list.__len__()):
+      Z += w[i]*(2*X[i]-W[i])
+    Z += (1-sum(w))* (2*X[-1]-W[-1])
+    for i in range(nl_list.__len__()+1):
+      W[i] = W[i] + 2*rho*(Z-X[i])
+    X_ret = np.zeros((rows,cols))
+    for i in range(nl_list.__len__()):
+      X_ret += w[i]*X[i]
+    X_ret += (1-sum(w))*X[-1]
     err_img = X_ret - z
     # end ADMM recursive update
   if savefig:
-    imsave(os.path.join(output_dir,'mace_output_w_'+str(w)+'.png'),np.clip(X_ret,0,1))
+    imsave(os.path.join(output_dir,'mace_output_optim.png'),np.clip(X_ret,0,1))
   return sqrt(((X_ret-z)**2).mean(axis=None))
 

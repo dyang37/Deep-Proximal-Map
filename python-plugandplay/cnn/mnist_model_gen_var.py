@@ -4,6 +4,7 @@ from keras.layers import Reshape, Dense, Conv2D, Dropout, Flatten, MaxPooling2D
 import numpy as np
 import pickle
 import copy
+import random
 
 model_name = "mnist_forward_model"
 _train = False
@@ -44,8 +45,7 @@ test_loss = loaded_model.evaluate(x_test, y_test)
 print("test loss: ",test_loss)
 
 print("Start generating training triplets")
-sigw = 0.
-sig = 0.05
+sigw = 0.05
 perterb = 1e-30
 yAv = []
 v = []
@@ -54,6 +54,7 @@ n_samples = x_train.shape[0]
 datagen_method = "mnist_mixed"
 idx = 0
 for v_img in x_train:
+  sig = random.uniform(0,0.3)
   epsil_k = np.random.normal(0,sig,v_img.shape)
   if idx < n_samples//2:
     x_img = v_img+epsil_k
@@ -77,10 +78,10 @@ print("shape of v: ",np.shape(v))
 print("shape of y-Av: ",np.shape(yAv))
 if _log_data:
   dataset = {'epsil':epsil,'log_y_Av':yAv, 'v':v}
-  dict_name = '/root/datasets/'+datagen_method+'/mnist_log_triplets_sig'+str(sig)+'_sigw'+str(sigw)+'.dat'
+  dict_name = '/root/datasets/'+datagen_method+'/mnist_log_triplets_sigvar_sigw'+str(sigw)+'.dat'
 else:
   dataset = {'epsil':epsil,'y_Av':yAv, 'v':v}
-  dict_name = '/root/datasets/'+datagen_method+'/mnist_triplets_sig'+str(sig)+'_sigw'+str(sigw)+'.dat'
+  dict_name = '/root/datasets/'+datagen_method+'/mnist_triplets_sigvar_sigw'+str(sigw)+'.dat'
 fd = open(dict_name,'wb')
 pickle.dump(dataset, fd)
 fd.close()
