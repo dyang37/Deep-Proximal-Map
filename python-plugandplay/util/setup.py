@@ -7,6 +7,6 @@ from Cython.Build import cythonize
 # to compile
 
 setup(
-  name = "icdupdateapp",
+  name = "icdapp",
   ext_modules = cythonize('*.pyx'),
 )

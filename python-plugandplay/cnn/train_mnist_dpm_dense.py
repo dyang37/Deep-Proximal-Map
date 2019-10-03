@@ -26,13 +26,13 @@ datagen_method = "mnist_mixed"
 
 
 if _log_data:
-  model_name = "dpm_model_mnist/"+datagen_method+"/model_dense_mixed4_flatten_log_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
-  dict_name = "/root/datasets/"+datagen_method+"/mnist_mixed4_flatten_log_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
+  model_name = "dpm_model_mnist/"+datagen_method+"/model_dense_laplace_flatten_log_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
+  dict_name = "/root/datasets/"+datagen_method+"/mnist_laplace_flatten_log_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
   dataset = pickle.load(open(dict_name,"rb"))
   y_Av = np.array(dataset['log_y_Av'])
 else:
-  model_name = "dpm_model_mnist/"+datagen_method+"/model_dense_mixed4_flatten_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
-  dict_name = "/root/datasets/"+datagen_method+"/mnist_mixed4_flatten_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
+  model_name = "dpm_model_mnist/"+datagen_method+"/model_dense_laplace_flatten_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
+  dict_name = "/root/datasets/"+datagen_method+"/mnist_laplace_flatten_triplets_sig"+str(sig)+"_sigw"+str(sigw)+".dat"
   dataset = pickle.load(open(dict_name,"rb"))
   y_Av = np.array(dataset['y_Av'])
 v = np.array(dataset['v'])

@@ -12,7 +12,7 @@ Adapted to include passing of multidimensional arrays
 
 class icd{
     public:
-        icd(std::vector< std::vector<double> >y_py, std::vector< std::vector<double> >h_py, int _K, double _lambd, double _sigw);
+        icd(std::vector<std::vector<double> > y_py, std::vector< std::vector<double> >h_py, int _K, double _lambd, double _sigw);
         ~icd();
         std::vector< std::vector<double> > update(std::vector< std::vector<double> > x, std::vector< std::vector<double> > xtilde);
     private:

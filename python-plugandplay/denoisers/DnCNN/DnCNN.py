@@ -3,7 +3,7 @@ from keras.models import Model
 
 def DnCNN(depth,filters=64,image_channels=1, use_bnorm=True):
     layer_count = 0
-    inpt = Input(shape=(512,512,image_channels),name = 'input'+str(layer_count))
+    inpt = Input(shape=(28,28,image_channels),name = 'input'+str(layer_count))
     # 1st layer, Conv+relu
     layer_count += 1
     x = Conv2D(filters=filters, kernel_size=(3,3), strides=(1,1),kernel_initializer='Orthogonal', padding='same',name = 'conv'+str(layer_count))(inpt)
