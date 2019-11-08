@@ -14,7 +14,7 @@ from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
-from construct_forward_model import construct_nonlinear_model
+from forward_model import camera_model
 
 _train = True
 print('training switch: ',_train)
@@ -48,8 +48,8 @@ y_Av = []
 for v_img in v:
   epsil_k = np.random.normal(0,sig,v_img.shape)
   x_img = np.add(v_img, epsil_k)
-  y = construct_nonlinear_model(x_img, sigma_g, alpha, sigw, gamma=gamma,clip=clip)
-  Av = construct_nonlinear_model(v_img, sigma_g, alpha, 0, gamma=gamma,clip=clip)
+  y = camera_model(x_img, sigma_g, alpha, sigw, gamma=gamma,clip=clip)
+  Av = camera_model(v_img, sigma_g, alpha, 0, gamma=gamma,clip=clip)
   y_Av.append(y-Av)
   epsil.append(epsil_k) 
 # Random Shuffle and training/test set selection

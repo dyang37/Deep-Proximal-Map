@@ -11,7 +11,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 from keras.models import  model_from_json
 import copy
 from feed_model import cnn_denoiser, pseudo_prox_map_nonlinear
-from construct_forward_model import construct_nonlinear_model
+from forward_model import camera_model
 from grad import grad_nonlinear_tf
 import matplotlib
 matplotlib.use('Agg')
@@ -58,7 +58,7 @@ def ce2(z,y,sigma_g,alpha,beta,sigw,nl,sig,gamma,clip,w=0.5,rho=0.5, savefig=Fal
     X1 = cnn_denoiser(W1, denoiser_model)
     
     # calculate admm cost
-    AW2 = construct_nonlinear_model(W2,sigma_g,alpha,0,gamma=gamma,clip=clip)
+    AW2 = camera_model(W2,sigma_g,alpha,0,gamma=gamma,clip=clip)
     X2 = pseudo_prox_map_nonlinear(np.subtract(y,AW2),W2,pmap_model) + W2
     Z = w*(2*X1-W1) + (1.-w)*(2*X2-W2)
     W1 = W1 + 2*rho*(Z-X1)
@@ -110,7 +110,7 @@ def mace(z,y,sigma_g,alpha,beta,sigw,nl_list,sig,gamma,clip,w,rho=0.5, savefig=F
   for itr in range(20):
     for i in range(nl_list.__len__()):
       X[i] = cnn_denoiser(W[i], dncnn_model_list[i])
-    AW_fm = construct_nonlinear_model(W[-1],sigma_g,alpha,0,gamma=gamma,clip=clip)
+    AW_fm = camera_model(W[-1],sigma_g,alpha,0,gamma=gamma,clip=clip)
     X[-1] = pseudo_prox_map_nonlinear(np.subtract(y,AW_fm),W[-1],pmap_model) + W[-1]
     Z = np.zeros((rows,cols))
     for i in range(nl_list.__len__()):

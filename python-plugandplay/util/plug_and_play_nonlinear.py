@@ -11,7 +11,7 @@ from keras.models import  model_from_json
 import copy
 from dncnn import cnn_denoiser, pseudo_prox_map_nonlinear
 from gmrf import gmrf_denoiser
-from construct_forward_model import construct_nonlinear_model
+from forward_model import camera_model
 from grad import grad_nonlinear_tf
 import matplotlib
 matplotlib.use('Agg')
@@ -86,7 +86,7 @@ def plug_and_play_nonlinear(p,z,y,sigma_g,alpha,beta,sigw,sigw_train,sig,gamma,c
   max_itr = 40
   for itr in range(init_itr):
     xtilde = np.subtract(v,u)
-    Axtilde = construct_nonlinear_model(xtilde,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    Axtilde = camera_model(xtilde,sigma_g,alpha,0,gamma=gamma, clip=clip)
     H = pseudo_prox_map_nonlinear(np.subtract(y,Axtilde),xtilde,pmap_model)
     x = np.add(xtilde, H)
     vtilde = np.add(x,u)
@@ -112,8 +112,8 @@ def plug_and_play_nonlinear(p,z,y,sigma_g,alpha,beta,sigw,sigw_train,sig,gamma,c
     xtilde_cp = np.subtract(v_cp,u_cp)
     imsave(os.path.join(output_dir,'xtilde_itr_'+str(itr)+'.png'),np.clip(xtilde_dp,0,1)) 
     
-    Axtilde_dp = construct_nonlinear_model(xtilde_dp,sigma_g,alpha,0,gamma=gamma, clip=clip)
-    Axtilde_cp = construct_nonlinear_model(xtilde_cp,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    Axtilde_dp = camera_model(xtilde_dp,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    Axtilde_cp = camera_model(xtilde_cp,sigma_g,alpha,0,gamma=gamma, clip=clip)
     H = pseudo_prox_map_nonlinear(np.subtract(y,Axtilde_dp),xtilde_dp,pmap_model)
     grad_f_tf = grad_nonlinear_tf(xtilde_cp,y,sigma_g,alpha,1,gamma,clip=clip)
     sig_gradf_tf = -sig_alpha*sig_alpha*grad_f_tf

@@ -3,7 +3,7 @@ import sys,os,argparse
 sys.path.append(os.path.join(os.getcwd(), "../util"))
 from skimage.io import imread, imsave
 from math import sqrt
-from construct_forward_model import construct_forward_model, construct_nonlinear_model
+from forward_model import camera_model
 from ml_estim_nonlinear import ml_estimate_nonlinear 
 import matplotlib.pyplot as plt
 import scipy.io as io
@@ -21,5 +21,5 @@ z = np.array(imread('../'+fig_in+'.png'), dtype=np.float32) / 255.0
 print('input image size: ',np.shape(z))
 
 ################## Forward model construction
-y = construct_nonlinear_model(z, sigma_g, alpha, sigw, gamma=gamma, clip=clip)
+y = camera_model(z, sigma_g, alpha, sigw, gamma=gamma, clip=clip)
 ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip)

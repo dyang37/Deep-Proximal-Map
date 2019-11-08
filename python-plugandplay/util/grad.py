@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.ndimage import convolve
-from construct_forward_model import construct_nonlinear_model
+from forward_model import camera_model
 from sr_util import gauss2D
 import tensorflow as tf
 import os

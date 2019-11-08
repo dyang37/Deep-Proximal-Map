@@ -5,7 +5,7 @@ from skimage.io import imread, imsave
 from math import sqrt
 from skimage.measure import compare_psnr
 from sr_util import gauss2D, windowed_sinc, avg_filt
-from construct_forward_model import construct_forward_model
+from forward_model import downsampling_model
 from plug_and_play_reconstruction import plug_and_play_reconstruction
 import matplotlib.pyplot as plt
 import scipy.io as io
@@ -57,6 +57,6 @@ h = windowed_sinc(K)
 filt_choice = 'sinc'
 print("filter choice: ",filt_choice)
 # y = Gz.
-y = construct_forward_model(z, K, h, sigw)
+y = downsampling_model(z, K, h, sigw)
 ################## Plug and play ADMM iterative reconstruction
 x = plug_and_play_reconstruction(z,y,h,sigw,lambd,K,optim_method, filt_choice)

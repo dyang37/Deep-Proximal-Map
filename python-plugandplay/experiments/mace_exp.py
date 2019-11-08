@@ -5,7 +5,7 @@ from skimage.io import imread, imsave
 from math import sqrt
 from skimage.measure import compare_psnr
 from sr_util import gauss2D, windowed_sinc, avg_filt
-from construct_forward_model import construct_nonlinear_model
+from forward_model import camera_model
 from mace import ce2,mace
 import matplotlib.pyplot as plt
 import scipy.io as io
@@ -27,7 +27,7 @@ z = np.array(imread('../'+fig_in+'.png'), dtype=np.float32) / 255.0
 filt_choice = 'nonlinear'
 print("filter choice: ",filt_choice)
 # y = Gz. We deliberately make awgn=0 for the purpose of experiments
-y = construct_nonlinear_model(z, sigma_g, alpha, sigw, gamma=gamma, clip=clip)
+y = camera_model(z, sigma_g, alpha, sigw, gamma=gamma, clip=clip)
   # save image
 figname = 'pnp_input_'+filt_choice+'.png'
 fig_fullpath = os.path.join(os.getcwd(),figname)

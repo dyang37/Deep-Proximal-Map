@@ -12,11 +12,12 @@ x_train = x_train.astype('float64')
 x_test = x_test.astype('float64')
 x_train /= 255.
 x_test /= 255.
+x_train = x_train.reshape((-1, 28*28))
+x_test = x_test.reshape((-1, 28*28))
 print(x_train.shape)
 print(x_test.shape)
-input_img = Input(shape=(28,28))
-flatten_img = Reshape((784,))(input_img)
-encoded = Dense(128, activation='relu')(flatten_img)
+input_img = Input(shape=(784,))
+encoded = Dense(128, activation='relu')(input_img)
 encoded = Dense(64, activation='relu')(encoded)
 encoded = Dense(32, activation='relu')(encoded)
 encoded = Dense(16, activation='relu')(encoded)
@@ -45,6 +46,7 @@ print("test loss: ",test_loss)
 
 print("Start generating training triplets")
 sigw = 0.
+perterb = 1e-30
 yAv = []
 v = []
 epsil = []
@@ -52,7 +54,7 @@ n_samples = x_train.shape[0]
 datagen_method = "mnist_mixed"
 np.random.seed(2019)
 for v_img in x_train[0:n_samples//4]:
-  sig = np.random.uniform(0,0.3)
+  sig = min(abs(np.random.laplace(scale=0.2)), 1.)
   epsil_k = np.random.normal(0,sig,v_img.shape)
   x_img = v_img+epsil_k
   y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
@@ -63,7 +65,7 @@ for v_img in x_train[0:n_samples//4]:
   v.append(v_img)
   epsil.append(epsil_k)
 for x_img in x_train[n_samples//4:2*n_samples//4]:
-  sig = np.random.uniform(0,0.3)
+  sig = min(abs(np.random.laplace(scale=0.2)), 1.)
   epsil_k = np.random.normal(0,sig,x_img.shape)
   v_img = x_img - epsil_k
   y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
@@ -88,14 +90,15 @@ for (x_idx,v_idx) in zip(x_idx_list,v_idx_list):
   epsil.append(epsil_k)
 
 for v_img in x_train[3*n_samples//4:n_samples-20]:
-  epsil.append(np.zeros((28,28)))
+  epsil.append(np.zeros((28*28,)))
   yAv.append(np.zeros((1,10)))
   v.append(v_img)
 
 yAv = np.reshape(yAv,(-1,10))
 print("shape of v: ",np.shape(v))
 print("shape of y-Av: ",np.shape(yAv))
-dict_name = '/root/datasets/'+datagen_method+'/mnist_dense_mixed4_'
+dict_name = '/root/datasets/'+datagen_method+'/mnist_laplace_'
+dict_name += 'flatten_'
 dict_name += 'triplets_sigvar_sigw'+str(sigw)+'.dat'
 print('dict_name = ',dict_name)
 dataset = {'epsil':epsil,'y_Av':yAv, 'v':v}

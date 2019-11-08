@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.getcwd(), "../denoisers/DnCNN"))
 sys.path.append(os.path.join(os.getcwd(), "../util"))
 from math import sqrt
 from skimage.io import imread, imsave
-from construct_forward_model import construct_nonlinear_model
+from forward_model import camera_model
 from grad import grad_nonlinear, grad_nonlinear_tf
 from dncnn import pseudo_prox_map_nonlinear
 from keras.models import model_from_json
@@ -37,8 +37,8 @@ z = np.array(imread('../'+fig_in+'.png'), dtype=np.float32) / 255.
 #x = copy.deepcopy(z)
 x = np.ones((rows,cols))/2.
 #x = np.random.rand(rows,cols)
-Ax = construct_nonlinear_model(x, sigma_g, alpha, 0, gamma=gamma, clip=clip)
-y = construct_nonlinear_model(z, sigma_g, alpha, 0, gamma=gamma, clip=clip)
+Ax = camera_model(x, sigma_g, alpha, 0, gamma=gamma, clip=clip)
+y = camera_model(z, sigma_g, alpha, 0, gamma=gamma, clip=clip)
 gradf_tf = grad_nonlinear_tf(x,y,sigma_g,alpha,sigw,gamma,clip=clip)
 gradf = grad_nonlinear(x,y,sigma_g,alpha,sigw,gamma,clip=clip)
         
@@ -58,8 +58,8 @@ for i in random.sample(list(range(512)), 3):
     x_minus = copy.deepcopy(x)
     x_plus[i,j] += epsil
     x_minus[i,j] -= epsil
-    Ax_plus = construct_nonlinear_model(x_plus, sigma_g, alpha, 0, gamma=gamma, clip=clip)
-    Ax_minus = construct_nonlinear_model(x_minus, sigma_g, alpha, 0, gamma=gamma, clip=clip)
+    Ax_plus = camera_model(x_plus, sigma_g, alpha, 0, gamma=gamma, clip=clip)
+    Ax_minus = camera_model(x_minus, sigma_g, alpha, 0, gamma=gamma, clip=clip)
     fx_plus = np.sum((y-Ax_plus)**2)/(2.*sigw*sigw)
     fx_minus = np.sum((y-Ax_minus)**2)/(2.*sigw*sigw)
     grad_s = (fx_plus-fx_minus)/(2.*epsil)

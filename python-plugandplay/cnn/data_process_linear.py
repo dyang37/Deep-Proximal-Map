@@ -1,7 +1,7 @@
 import os,sys,glob
 from skimage.io import imread
 sys.path.append(os.path.join(os.getcwd(), "../util"))
-from construct_forward_model import construct_forward_model
+from forward_model import downsampling_model
 from sr_util import windowed_sinc, gauss2D, avg_filt
 from icdwrapper import Pyicd
 import numpy as np
@@ -48,8 +48,8 @@ for filename in glob.glob('/root/datasets/DIV2K_*_HR/*.png'):
   v = v_img[rows_ctr-256:rows_ctr+256,cols_ctr-256:cols_ctr+256]
   epsil_k = np.random.normal(0,sig,v.shape)
   x_img = np.add(v, epsil_k)
-  y = construct_forward_model(x_img, K, h, sigw)
-  fv = construct_forward_model(v, K, h, 0)
+  y = downsampling_model(x_img, K, h, sigw)
+  fv = downsampling_model(v, K, h, 0)
   y_fv_k = np.subtract(y,fv)
   epsil.append(epsil_k) 
   y_fv.append(y_fv_k)

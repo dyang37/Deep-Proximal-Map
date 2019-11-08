@@ -1,4 +1,5 @@
-from proj import rowproj, colproj
+from proxMap import PM_rowproj, PM_colproj, PM_blockavg
+from forward_model import blockAvgModel
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
@@ -43,8 +44,8 @@ im = ax.imshow(v, cmap='coolwarm',vmin=0,vmax=1)
 fig.colorbar(im, cax=cax, orientation='horizontal')
 plt.savefig(os.path.join(output_dir,"v.png"))
   
-xr = rowproj(v,yr,siglambd,sigy)
-xc = colproj(v,yc,siglambd,sigy)
+xr = PM_rowproj(v,yr,siglambd,sigy)
+xc = PM_colproj(v,yc,siglambd,sigy)
 fig, ax = plt.subplots()
 cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
 im = ax.imshow(xc, cmap='coolwarm',vmin=0,vmax=1)

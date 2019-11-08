@@ -1,7 +1,7 @@
 import os,sys,glob
 from skimage.io import imread
 sys.path.append(os.path.join(os.getcwd(), "../util"))
-from construct_forward_model import construct_forward_model
+from forward_model import downsampling_model
 from sr_util import windowed_sinc, gauss2D, avg_filt
 from icdwrapper import Pyicd
 import numpy as np
@@ -46,8 +46,8 @@ for filename in glob.glob('/root/datasets/pmap/*/*.jpg'):
   v_img = to_gray(v_in, K)
   epsil_k = np.random.normal(0,sig,v_img.shape)
   x_img = np.add(v_img, epsil_k)
-  y = construct_forward_model(x_img, K, h, sigw)
-  fv = construct_forward_model(v_img, K, h, 0)
+  y = downsampling_model(x_img, K, h, sigw)
+  fv = downsampling_model(v_img, K, h, 0)
   y_fv_k = np.subtract(y,fv)
   epsil.append(epsil_k) 
   y_fv.append(y_fv_k)

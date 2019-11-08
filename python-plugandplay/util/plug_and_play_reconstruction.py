@@ -9,7 +9,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from keras.models import  model_from_json
 import copy
 from dncnn import cnn_denoiser, pseudo_prox_map
-from construct_forward_model import construct_forward_model
+from forward_model import downsampling_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -95,7 +95,7 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,K,optim_method,filt_choic
     imsave(os.path.join(output_dir,'pnp_output_itr_'+str(itr)+'.png'),x) 
     
     # calculate admm cost
-    Gx = construct_forward_model(x,K,h,0)
+    Gx = downsampling_model(x,K,h,0)
     ggmrf_sum = 0
     for i in range(rows_hr):
       for j in range(cols_hr):
@@ -129,7 +129,7 @@ def plug_and_play_reconstruction(hr_img,y,h,sigw,lambd,K,optim_method,filt_choic
 
 def optimization_wrapper(v,vtilde,y,h,K,itr,optim_method, pmap_model, icd_wrapper):
   if optim_method == 0:
-    fvtilde = construct_forward_model(vtilde,K,h,0)
+    fvtilde = downsampling_model(vtilde,K,h,0)
     H = pseudo_prox_map(np.subtract(y,fvtilde),pmap_model)
     v = np.add(vtilde, H)
   elif optim_method == 1:

@@ -16,20 +16,15 @@ from keras.models import model_from_json
 import copy
 import pickle
 
-def ml_estimate_mnist(y,sig,sigw,d,_log_data):
-  perterb = 1e-30
+def ml_estimate_mnist(y,sig,sigw,d):
   (x_train, y_train), _ = tf.keras.datasets.mnist.load_data()
-  x_train = x_train.reshape((-1, 28*28))
   x_train = x_train.astype('float64')
   x_train /= 255.
   rows = 28
   cols = 28
   # read DPM model for mnist classifier
   dpm_model_dir=os.path.join(os.getcwd(),'../cnn/dpm_model_mnist/mnist_mixed/')
-  if _log_data:
-    dpm_model_name = "model_dense_laplace_flatten_log_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
-  else:
-    dpm_model_name = "model_dense_laplace_flatten_mnist_sig_"+str(sig)+"_sigw"+str(sigw)
+  dpm_model_name = "model_dense_mixed4_mnist_dense"
   print("DPM model used:",dpm_model_name)
   json_file = open(os.path.join(dpm_model_dir, dpm_model_name+'.json'), 'r')
   dpm_model_json = json_file.read()
@@ -55,36 +50,34 @@ def ml_estimate_mnist(y,sig,sigw,d,_log_data):
   # iterative reconstruction
   idx = -20
   d = y_train[idx]
-  x = x_train[idx]+ np.random.normal(0,0.1,(rows*cols,))
-  #x = x_train[idx]
-  y = np.reshape(mnist_model.predict(x_train[idx].reshape((1,784))), (10,))
-  #y = np.reshape(mnist_model.predict(x.reshape((1,784))), (10,))
-  #x = np.zeros((rows*cols,))
-  #x = np.random.rand(rows*cols,)
+  #x = x_train[idx]+ np.random.normal(0,0.1,(rows*cols,))
+  y = np.reshape(mnist_model.predict(x_train[idx].reshape((1,28,28))), (10,))
+  #x = np.zeros((rows,cols))
+  x = np.random.rand(rows,cols)
   fig, ax = plt.subplots()
   cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
-  im = ax.imshow(x.reshape((28,28)), cmap='coolwarm',vmin=0,vmax=1)
+  im = ax.imshow(x, cmap='coolwarm',vmin=0,vmax=1)
   fig.colorbar(im, cax=cax, orientation='horizontal')
   plt.savefig('./x_gd.png')
   plt.close()
   print("init digit: ",d)
   output_dir = os.path.join(os.getcwd(),'../results/ml_output_mnist/mnist_mixed/')
-  output_dir = os.path.join(output_dir,'nolog')
+  output_dir = os.path.join(output_dir,'dense')
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
   print("output stored in ", output_dir)
-  imsave(os.path.join(output_dir,'v_init.png'), np.clip(x.reshape((28,28)),0,None))
+  imsave(os.path.join(output_dir,'v_init.png'), np.clip(x,0,None))
   ml_cost = []
   err_y_list = []
-  for itr in range(200):
+  for itr in range(100):
     print('iteration ',itr)
     fig, ax = plt.subplots()
     cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
-    im = ax.imshow(x.reshape((28,28)), cmap='coolwarm',vmin=0,vmax=1)
+    im = ax.imshow(x, cmap='coolwarm',vmin=0,vmax=1)
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'x_itr'+str(itr)+'.png'))
 
-    Ax = np.reshape(mnist_model.predict(x.reshape((1,rows*cols))), (10,))
+    Ax = np.reshape(mnist_model.predict(x.reshape((1,rows,cols))), (10,))
     
     fig, ax = plt.subplots()
     cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
@@ -98,18 +91,14 @@ def ml_estimate_mnist(y,sig,sigw,d,_log_data):
     err_y_list.append(err_y)
     fig, ax = plt.subplots()
     cax = fig.add_axes([0.27, 0.10, 0.5, 0.05])
-    im = ax.imshow(err_y, cmap='coolwarm',vmin=-abs(err_y).max(),vmax=abs(err_y).max())
+    im = ax.imshow(err_y, cmap='coolwarm',vmin=-0.01,vmax=0.01)
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'y_err_pml_itr'+str(itr)+'.png'))
     # deep proximal map update
-    if _log_data:
-      H = pseudo_prox_map_nonlinear(np.subtract(np.log10(y+perterb),np.log10(Ax+perterb)),x,dpm_model)
-    else:
-      H = pseudo_prox_map_nonlinear(np.subtract(y,Ax),x,dpm_model)
-      #H = pseudo_prox_map(np.subtract(y,Ax),dpm_model)
+    H = pseudo_prox_map_nonlinear(np.subtract(y,Ax),x,dpm_model)
     x = np.clip(np.add(x, H),0,1)
 
-  y_cnn = np.reshape(mnist_model.predict(x.reshape((1,rows*cols))), (10,))
+  y_cnn = np.reshape(mnist_model.predict(x.reshape((1,rows,cols))), (10,))
   print('prediction of generated image:',y_cnn)
   mse_y_gd = ((y-y_cnn)**2).mean(axis=None)
   print('pixelwise mse value for y between cnn and groundtruth: ',mse_y_gd)

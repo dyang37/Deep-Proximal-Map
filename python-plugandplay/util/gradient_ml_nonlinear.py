@@ -6,7 +6,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 sys.path.append(os.path.join(os.getcwd(), "../denoisers/DnCNN"))
 from skimage.io import imsave
 from scipy.misc import imresize
-from construct_forward_model import construct_nonlinear_model
+from forward_model import camera_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -52,8 +52,8 @@ def ml_gradient_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
   ml_cost_grad = []
   for itr in range(50):
     print('iteration ',itr)
-    fx_pml = construct_nonlinear_model(x_pml,sigma_g,alpha,0,gamma=gamma, clip=clip)
-    fx_grad = construct_nonlinear_model(x_grad,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    fx_pml = camera_model(x_pml,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    fx_grad = camera_model(x_grad,sigma_g,alpha,0,gamma=gamma, clip=clip)
     ml_cost_pml.append(sqrt(((y-fx_pml)**2).mean(axis=None)))
     ml_cost_grad.append(sqrt(((y-fx_grad)**2).mean(axis=None)))
     imsave(os.path.join(output_dir,'pml_output_itr'+str(itr+1)+'.png'), np.clip(x_pml,0,1))
@@ -97,7 +97,7 @@ def ml_gradient_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'gradient_itr'+str(itr+1)+'.png'))
  
-  y_cnn = construct_nonlinear_model(x_pml,sigma_g,alpha,0,gamma=gamma, clip=clip)
+  y_cnn = camera_model(x_pml,sigma_g,alpha,0,gamma=gamma, clip=clip)
   mse_y_gd = ((y-y_cnn)**2).mean(axis=None)
   print('pixelwise mse value for y between cnn and groundtruth: ',mse_y_gd)
   

@@ -6,7 +6,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 sys.path.append(os.path.join(os.getcwd(), "../denoisers/DnCNN"))
 from skimage.io import imsave
 from scipy.misc import imresize
-from construct_forward_model import construct_nonlinear_model
+from forward_model import camera_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -51,7 +51,7 @@ def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
   grad_diff_mse = []
   for itr in range(50):
     print('iteration ',itr)
-    fx = construct_nonlinear_model(x,sigma_g,alpha,0,gamma=gamma, clip=clip)
+    fx = camera_model(x,sigma_g,alpha,0,gamma=gamma, clip=clip)
     ml_cost.append(sqrt(((y-fx)**2).mean(axis=None)))
     imsave(os.path.join(output_dir,'pml_output_itr'+str(itr)+'.png'), np.clip(x,0,1))
     err_y = y-fx
@@ -82,7 +82,7 @@ def ml_estimate_nonlinear(y,sigma_g,alpha,sig,sigw,gamma,clip):
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'gradient_tf_itr'+str(itr+1)+'.png'))
  
-  y_cnn = construct_nonlinear_model(x,sigma_g,alpha,0,gamma=gamma, clip=clip)
+  y_cnn = camera_model(x,sigma_g,alpha,0,gamma=gamma, clip=clip)
   mse_y_gd = ((y-y_cnn)**2).mean(axis=None)
   print('pixelwise mse value for y between cnn and groundtruth: ',mse_y_gd)
   
