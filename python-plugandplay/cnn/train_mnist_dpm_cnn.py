@@ -1,5 +1,5 @@
 import os,sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1,2"
 sys.path.append(os.path.join(os.getcwd(), "../util"))
 import numpy as np
 from keras import layers, models
@@ -20,8 +20,8 @@ _train = True
 print('training switch: ',_train)
 
 datagen_method = "mnist_mixed"
-model_name = "dpm_model_mnist/"+datagen_method+"/model_cnn_mixed4_mnist_cnn_laplace"
-dict_name = "/root/datasets/"+datagen_method+"/mnist_cnn_mixed4_triplets_laplace.dat"
+model_name = "dpm_model_mnist/"+datagen_method+"/model_cnn_mixed4_mnist_cnn_laplace0.1_deep"
+dict_name = "/root/datasets/"+datagen_method+"/mnist_cnn_mixed4_triplets_laplace0.1"
 dataset = pickle.load(open(dict_name,"rb"))
 
 y_Av = np.array(dataset['y_Av'])
@@ -41,17 +41,9 @@ epsil_train = epsil[train_idx]
 yAv_train = y_Av[train_idx]
 v_train = v[train_idx]
 
-def decoder(x_encode,dim=16,out_dim=784,last_activ='relu'):
-  x_decode = layers.Dense(dim,activation='linear')(x_encode)
-  while dim<128:
-    dim *= 2
-    x_decode = layers.Dense(dim,activation='linear')(x_decode)
-  x_decode = layers.Dense(out_dim,activation=last_activ)(x_decode)
-  return x_decode
-
 def cnnStack(x,dim,ker_size=(3,3),depth=3,upsamp=True):
   for _ in range(depth):
-    x = layers.Conv2D(dim,ker_size,padding='same',activation='relu')(x)
+    x = layers.Conv2D(dim,ker_size,padding='same',activation='relu',kernel_initializer='he_normal')(x)
   if upsamp:
     x = layers.UpSampling2D((2,2))(x)
   return x
@@ -63,23 +55,26 @@ input_yAv = layers.Input(shape=(10,))
 input_v = layers.Input(shape=(rows,cols))
 yAv_dense = layers.Dense(49,activation='relu')(input_yAv)
 yAv_2D = layers.Reshape((7,7,1))(yAv_dense)
-v_2D = layers.Reshape((28,28,1))(input_v)
+yAv_cnn = cnnStack(yAv_2D,16)
 yAv_cnn = cnnStack(yAv_2D,32)
-yAv_cnn = cnnStack(yAv_cnn,16)
-yAv_cnn = cnnStack(yAv_cnn,8,upsamp=False)
-yAv_cnn = layers.Conv2D(1,(3,3),padding='same',activation='relu')(yAv_cnn)
-v_cnn = cnnStack(v_2D,32,depth=4,upsamp=False)
-v_cnn = layers.Conv2D(1,(3,3),padding='same',activation='relu')(v_cnn)
+yAv_cnn = cnnStack(yAv_cnn,64)
+yAv_cnn = cnnStack(yAv_cnn,128,upsamp=False)
+#yAv_cnn = layers.Conv2D(1,(3,3),padding='same',activation='relu')(yAv_cnn)
+v_2D = layers.Reshape((28,28,1))(input_v)
+v_cnn = cnnStack(v_2D,16,depth=3,upsamp=False)
+v_cnn = cnnStack(v_2D,32,depth=3,upsamp=False)
+v_cnn = cnnStack(v_cnn,64,depth=3,upsamp=False)
+v_cnn = cnnStack(v_cnn,128,depth=3,upsamp=False)
+#v_cnn = layers.Conv2D(1,(3,3),padding='same',activation='relu')(v_cnn)
 H = layers.concatenate([v_cnn,yAv_cnn])
-H = layers.Conv2D(32,(5,5),padding='same',activation='relu')(H)
-H = layers.Conv2D(16,(5,5),padding='same',activation='relu')(H)
-H = layers.Conv2D(8,(5,5),padding='same',activation='relu')(H)
-H = layers.Conv2D(4,(5,5),padding='same',activation='relu')(H)
-H = layers.Conv2D(2,(5,5),padding='same',activation='relu')(H)
-H = layers.Conv2D(1,(5,5),padding='same',activation='tanh')(H)
+H = layers.Conv2D(128,(3,3),padding='same',activation='relu',kernel_initializer='he_normal')(H)
+H = layers.Conv2D(64,(3,3),padding='same',activation='relu',kernel_initializer='he_normal')(H)
+H = layers.Conv2D(32,(3,3),padding='same',activation='relu',kernel_initializer='he_normal')(H)
+H = layers.Conv2D(2,(3,3),padding='same',activation='relu',kernel_initializer='he_normal')(H)
+H = layers.Conv2D(1,(1,1),padding='same',activation='tanh')(H)
 H_out = layers.Reshape((28,28))(H)
 model = models.Model(inputs=[input_yAv,input_v],output=H_out)
-#model = multi_gpu_model(model, gpus=3)
+model = multi_gpu_model(model, gpus=2)
 model.summary()
 ###############
 
@@ -88,7 +83,7 @@ model.summary()
 batch_size = 256
 model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.0005))
 if _train:
-  history = model.fit([yAv_train,v_train], epsil_train, epochs=150, batch_size=batch_size,shuffle=True)
+  history = model.fit([yAv_train,v_train], epsil_train, epochs=250, batch_size=batch_size,shuffle=True)
   model_json = model.to_json()
   with open(model_name+".json", "w") as json_file:
     json_file.write(model_json)

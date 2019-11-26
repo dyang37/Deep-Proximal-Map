@@ -10,7 +10,7 @@ from forward_model import blockAvgModel
 import tensorflow as tf
 sys.path.append(os.path.join(os.getcwd(), "../denoisers/DnCNN"))
 from DnCNN import DnCNN
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 ################### hyperparameters
 L = 4
 optim = False
@@ -25,7 +25,7 @@ mnist_model = model_from_json(mnist_model_json)
 mnist_model.load_weights(os.path.join(mnist_model_dir, mnist_model_name+".h5"))
 # load Deep proximal map model
 dpm_model_dir=os.path.join(os.getcwd(),'../cnn/dpm_model_mnist/mnist_mixed/')
-dpm_model_name = "model_cnn_mixed4_mnist_cnn_laplace"
+dpm_model_name = "model_cnn_mixed4_mnist_cnn_laplace0.1_deep"
 json_file = open(os.path.join(dpm_model_dir, dpm_model_name+'.json'), 'r')
 loaded_model_json = json_file.read()
 json_file.close()
@@ -45,9 +45,11 @@ rmse_x_arr= []
 norm2_y_arr= []
 n_samples = 1000
 print("total number of samples: ",n_samples)
-for idx in range(-20,-10):
+err_idx = [-706, -697, -657, -616, -601, -582, -553, -551, -545, -542, -532, -437, -435, -426, -419, -410, -284, -282, -274, -266, -243, -208, -198, -72]
+#for idx in range(-n_samples,0):
+for idx in err_idx:
   print("idx ",idx)
-  outdir_name = "MACE5_linesearch"
+  outdir_name = "MACE5_SoA"
   exp_dir = os.path.join(os.getcwd(),'../results/mace_mnist_cnn/'+outdir_name)
   output_dir = os.path.join(exp_dir,"idx"+str(idx))
   if not os.path.exists(output_dir):
@@ -84,7 +86,7 @@ for idx in range(-20,-10):
     w_opt = (b+a)/2.
     beta_opt = [0.1,0.05,0.05,0.8-w_opt,w_opt]
   else:
-    beta_opt = [0.1,0.05,0.05,0.75,0.05]
+    beta_opt = [0.1,0.05,0.05,0.7,0.1]
   (rmse_x,norm2_y) = mace(z,y,yr,yc,yb,L,beta_opt,mnist_model,dpm_model,denoiser_model,output_dir,rho=0.8,savefig=True)
   rmse_x_arr.append(rmse_x)
   norm2_y_arr.append(norm2_y)
@@ -93,4 +95,4 @@ for idx in range(-20,-10):
 print("average mse of x-x_gd = ",np.mean(rmse_x_arr))
 print("average norm2 of y-Ax = ",np.mean(norm2_y_arr))
 #with open(os.path.join(exp_dir,'statistics_all.txt'), 'w') as filehandle:
-#  json.dump([np.mean(rmse_x_arr),np.mean(norm2_y_arr).item()], filehandle)
+#  json.dump([np.mean(rmse_x_arr),np.mean(norm2_y_arr).item(),dpm_model_name], filehandle)

@@ -4,7 +4,8 @@ from keras.layers import Input,Reshape, Dense, Conv2D, Dropout, Flatten, MaxPool
 import numpy as np
 import pickle
 import copy
-
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 model_name = "mnist_forward_cnn"
 _train = False
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
@@ -22,6 +23,7 @@ model.add(Flatten())
 model.add(Dense(128, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(10, activation='softmax'))
+model.summary()
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 if _train:
   model.fit(x=x_test,y=y_test, epochs=100)
@@ -44,7 +46,6 @@ test_loss = loaded_model.evaluate(x_train, y_train)
 print("test loss: ",test_loss)
 
 print("Start generating training triplets")
-sigw = 0.
 yAv = []
 v = []
 epsil = []
@@ -57,7 +58,6 @@ for v_img in x_train[0:n_samples//4]:
   epsil_k = np.random.normal(0,sig,v_img.shape)
   x_img = v_img+epsil_k
   y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
-  y += np.random.normal(0,sigw,y.shape)
   Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
   y_Av_k = y-Av
   yAv.append(y_Av_k)
@@ -69,7 +69,6 @@ for x_img in x_train[n_samples//4:2*n_samples//4]:
   epsil_k = np.random.normal(0,sig,x_img.shape)
   v_img = x_img - epsil_k
   y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
-  y += np.random.normal(0,sigw,y.shape)
   Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
   y_Av_k = y-Av
   yAv.append(y_Av_k)
@@ -82,7 +81,6 @@ for (x_idx,v_idx) in zip(x_idx_list,v_idx_list):
   v_img = x_train[v_idx]
   epsil_k = x_img - v_img
   y = loaded_model.predict(x_img.reshape((1,)+x_img.shape))
-  y += np.random.normal(0,sigw,y.shape)
   Av = loaded_model.predict(v_img.reshape((1,)+v_img.shape))
   y_Av_k = y-Av
   yAv.append(y_Av_k)
@@ -98,7 +96,7 @@ yAv = np.reshape(yAv,(-1,10))
 print("shape of v: ",np.shape(v))
 print("shape of epsil: ",np.shape(epsil))
 print("shape of y-Av: ",np.shape(yAv))
-dict_name = '/root/datasets/'+datagen_method+'/mnist_cnn_mixed4_triplets_laplace.dat'
+dict_name = '/root/datasets/'+datagen_method+'/mnist_cnn_mixed4_triplets_laplace0.1'
 print('dict_name = ',dict_name)
 dataset = {'epsil':epsil,'y_Av':yAv, 'v':v}
 fd = open(dict_name,'wb')
