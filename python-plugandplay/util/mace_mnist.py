@@ -49,7 +49,15 @@ def mace(z,y,yr,yc,yb,L,beta,mnist_model,dpm_model,denoiser_model,output_dir,rho
     im = ax.imshow((y-AW_fm).reshape((1,10)), cmap='coolwarm',vmin=-0.1,vmax=0.1)
     fig.colorbar(im, cax=cax, orientation='horizontal')
     plt.savefig(os.path.join(output_dir,'y-Ax_itr'+str(itr)+'.png')) 
-    X[-1] = np.clip(pseudo_prox_map_nonlinear(np.subtract(y,AW_fm),W[-1],dpm_model)+W[-1], 0, 1)
+    
+    fig, ax = plt.subplots()
+    cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
+    im = ax.imshow(W[-1], cmap='coolwarm',vmin=0,vmax=1)
+    fig.colorbar(im, cax=cax, orientation='horizontal')
+    plt.savefig(os.path.join(output_dir,'v_itr'+str(itr)+'.png'))
+    
+    H = pseudo_prox_map_nonlinear(np.subtract(y,AW_fm),W[-1],dpm_model)
+    X[-1] = np.clip(H+W[-1], 0, 1)
     Z = np.zeros((rows,cols))
     for i in range(beta.__len__()):
       Z += beta[i]*(2*X[i]-W[i])
@@ -61,6 +69,13 @@ def mace(z,y,yr,yc,yb,L,beta,mnist_model,dpm_model,denoiser_model,output_dir,rho
     err_img = X_ret - z
     Ax_ret = np.reshape(mnist_model.predict(X_ret.reshape(1,28,28)), (10,))
     y_err = y-Ax_ret 
+    
+    fig, ax = plt.subplots()
+    cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
+    im = ax.imshow(H, cmap='coolwarm',vmin=-1,vmax=1)
+    fig.colorbar(im, cax=cax, orientation='horizontal')
+    plt.savefig(os.path.join(output_dir,'H_itr'+str(itr)+'.png'))
+     
     fig, ax = plt.subplots()
     cax = fig.add_axes([0.27, 0.05, 0.5, 0.05])
     im = ax.imshow(X_ret, cmap='coolwarm',vmin=0,vmax=1)

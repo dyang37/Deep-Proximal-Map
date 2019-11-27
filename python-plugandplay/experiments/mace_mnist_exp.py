@@ -46,6 +46,7 @@ norm2_y_arr= []
 n_samples = 1000
 print("total number of samples: ",n_samples)
 err_idx = [-706, -697, -657, -616, -601, -582, -553, -551, -545, -542, -532, -437, -435, -426, -419, -410, -284, -282, -274, -266, -243, -208, -198, -72]
+#err_idx = [-616]
 #for idx in range(-n_samples,0):
 for idx in err_idx:
   print("idx ",idx)

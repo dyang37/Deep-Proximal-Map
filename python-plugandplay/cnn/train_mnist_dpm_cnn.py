@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 # allow GPU growth
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
+from keras import backend as K
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
@@ -20,7 +21,7 @@ _train = True
 print('training switch: ',_train)
 
 datagen_method = "mnist_mixed"
-model_name = "dpm_model_mnist/"+datagen_method+"/model_cnn_mixed4_mnist_cnn_laplace0.1_deep"
+model_name = "dpm_model_mnist/"+datagen_method+"/model_cnn_mixed4_mnist_cnn_laplace0.1_mult"
 dict_name = "/root/datasets/"+datagen_method+"/mnist_cnn_mixed4_triplets_laplace0.1"
 dataset = pickle.load(open(dict_name,"rb"))
 
@@ -72,7 +73,12 @@ H = layers.Conv2D(64,(3,3),padding='same',activation='relu',kernel_initializer='
 H = layers.Conv2D(32,(3,3),padding='same',activation='relu',kernel_initializer='he_normal')(H)
 H = layers.Conv2D(2,(3,3),padding='same',activation='relu',kernel_initializer='he_normal')(H)
 H = layers.Conv2D(1,(1,1),padding='same',activation='tanh')(H)
-H_out = layers.Reshape((28,28))(H)
+yAv_square = layers.Multiply()([input_yAv,input_yAv])
+norm2_yAv = K.sum(yAv_square,axis=None)
+norm2_cst = K.constant(0.5,shape=(1,1,1))
+norm2_mult = layers.Lambda(lambda x: x * norm2_cst)(norm2_yAv)
+H_mult = layers.Lambda(lambda x: x * norm2_mult)(H)
+H_out = layers.Reshape((28,28))(H_mult)
 model = models.Model(inputs=[input_yAv,input_v],output=H_out)
 model = multi_gpu_model(model, gpus=2)
 model.summary()
@@ -83,7 +89,7 @@ model.summary()
 batch_size = 256
 model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.0005))
 if _train:
-  history = model.fit([yAv_train,v_train], epsil_train, epochs=250, batch_size=batch_size,shuffle=True)
+  history = model.fit([yAv_train,v_train], epsil_train, epochs=150, batch_size=batch_size,shuffle=True)
   model_json = model.to_json()
   with open(model_name+".json", "w") as json_file:
     json_file.write(model_json)
