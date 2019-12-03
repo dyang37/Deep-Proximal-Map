@@ -1,1 +1,1 @@
-[0.12442072967609984, 0.24160109771164773, "model_cnn_mixed4_mnist_cnn_laplace0.1_deep"]
+[0.059419574182934136, 0.0859580412144219, "model_cnn_mixed4_mnist_cnn_laplace0.1_deep"]
