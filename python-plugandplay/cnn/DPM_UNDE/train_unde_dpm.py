@@ -1,5 +1,5 @@
 import os,sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import h5py
 import numpy as np
@@ -48,14 +48,14 @@ def residual_stack1D(x,n_chann=32, downsize=2):
   def residual_unit(y,_strides=1):
     shortcut_unit=y
     # 1x1 conv linear
-    y = layers.Conv1D(n_chann, kernel_size=5,data_format='channels_first',strides=_strides,padding='same',activation='relu')(y)
+    y = layers.Conv1D(n_chann, kernel_size=5,data_format='channels_first',strides=_strides,padding='same',activation='relu',kernel_initializer="he_normal")(y)
     y = layers.BatchNormalization()(y)
-    y = layers.Conv1D(n_chann, kernel_size=5,data_format='channels_first',strides=_strides,padding='same',activation='relu')(y)
+    y = layers.Conv1D(n_chann, kernel_size=5,data_format='channels_first',strides=_strides,padding='same',activation='relu',kernel_initializer="he_normal")(y)
     y = layers.BatchNormalization()(y)
     # add batch normalization
     y = layers.add([shortcut_unit,y])
     return y
-  x = layers.Conv1D(n_chann, data_format='channels_first',kernel_size=1, padding='same',activation='linear')(x)
+  x = layers.Conv1D(n_chann, data_format='channels_first',kernel_size=1, padding='same',activation='linear',kernel_initializer="he_normal")(x)
   x = layers.BatchNormalization()(x)
   x = residual_unit(x)
   x = residual_unit(x)
@@ -67,14 +67,14 @@ def residual_stack2D(x,n_chann=32):
   def residual_unit(y,_strides=1):
     shortcut_unit=y
     # 1x1 conv linear
-    y = layers.Conv2D(n_chann, kernel_size=(5,5),data_format='channels_first',strides=_strides,padding='same',activation='relu')(y)
+    y = layers.Conv2D(n_chann, kernel_size=(5,5),data_format='channels_first',strides=_strides,padding='same',activation='relu',kernel_initializer="he_normal")(y)
     y = layers.BatchNormalization()(y)
-    y = layers.Conv2D(n_chann, kernel_size=(5,5),data_format='channels_first',strides=_strides,padding='same',activation='relu')(y)
+    y = layers.Conv2D(n_chann, kernel_size=(5,5),data_format='channels_first',strides=_strides,padding='same',activation='relu',kernel_initializer="he_normal")(y)
     y = layers.BatchNormalization()(y)
     # add batch normalization
     y = layers.add([shortcut_unit,y])
     return y
-  x = layers.Conv2D(n_chann, data_format='channels_first',kernel_size=(1,1), padding='same',activation='linear')(x)
+  x = layers.Conv2D(n_chann, data_format='channels_first',kernel_size=(1,1), padding='same',activation='linear',kernel_initializer="he_normal")(x)
   x = layers.BatchNormalization()(x)
   x = residual_unit(x)
   x = residual_unit(x)
@@ -101,14 +101,14 @@ H = residual_stack2D(H)
 H = residual_stack2D(H)
 H = residual_stack2D(H)
 H = residual_stack2D(H)
-H = residual_stack2D(H,n_chann=1)
+H = layers.Conv2D(1,(1,1),padding='same',data_format = 'channels_first',activation='tanh',kernel_initializer="he_normal")(H)
 H_out = layers.Reshape((Nx,Nz))(H)
 model = models.Model(inputs=[input_yAv,input_v],outputs=H_out)
-model = multi_gpu_model(model, gpus=4)
+model = multi_gpu_model(model, gpus=2)
 model.summary()
 
 # Start training
-batch_size = 16
+batch_size = 8
 model.compile(loss='mean_squared_error',optimizer=Adam(lr=0.0005))
 if _train:
   model.fit([y_Av_train,v_train], epsil_train, epochs=50, batch_size=batch_size,shuffle=True)
